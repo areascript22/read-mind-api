@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(100)
+  lastName     String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+
+  courses     Course[]            @relation("CourseTeacher")
+  enrollments CourseStudent[]
+  progress    StudentProgress[]
+  quizResults StudentQuizResult[] 
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(255)
+  description String?
+  teacherId   Int
+  createdAt   DateTime @default(now())
+
+  teacher         User              @relation("CourseTeacher", fields: [teacherId], references: [id])
+  students        CourseStudent[]
+  contents        CourseContent[]
+  StudentProgress StudentProgress[]
+}
+
+model CourseStudent {
+  id         Int      @id @default(autoincrement())
+  courseId   Int
+  studentId  Int
+  enrolledAt DateTime @default(now())
+
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId])
+}
+
+model CourseContent {
+  id          Int         @id @default(autoincrement())
+  courseId    Int
+  title       String      @db.VarChar(255)
+  contentType ContentType
+  contentText String?
+  resourceUrl String?
+  orderIndex  Int
+  createdAt   DateTime    @default(now())
+
+  course          Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  quiz            Quiz?
+  StudentProgress StudentProgress[]
+
+  @@unique([courseId, orderIndex]) // Ensures unique order per course
+}
+
+model Quiz {
+  id          Int     @id @default(autoincrement())
+  contentId   Int     @unique
+  title       String  @db.VarChar(255)
+  description String?
+
+  content   CourseContent       @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  results   StudentQuizResult[]
+}
+
+model QuizQuestion {
+  id           Int          @id @default(autoincrement())
+  quizId       Int
+  questionText String
+  questionType QuestionType
+  orderIndex   Int
+
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@unique([quizId, orderIndex]) // Ensures unique order per quiz
+}
+
+model QuizAnswer {
+  id         Int     @id @default(autoincrement())
+  questionId Int
+  answerText String
+  isCorrect  Boolean @default(false)
+
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model StudentProgress {
+  id               Int       @id @default(autoincrement())
+  studentId        Int
+  courseId         Int
+  contentId        Int
+  completed        Boolean   @default(false)
+  score            Decimal? // Use Decimal instead of Float
+  timeSpentMinutes Int       @default(0)
+  completedAt      DateTime?
+
+  student User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  content CourseContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, contentId])
+}
+
+model StudentQuizResult {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  quizId      Int
+  score       Decimal  @default(0.0)
+  attemptedAt DateTime @default(now())
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  student
+  teacher
+}
+
+enum ContentType {
+  text
+  quiz
+  audio
+  pdf
+  interactive
+}
+
+enum QuestionType {
+  multiple_choice
+  true_false
+  open
+}
