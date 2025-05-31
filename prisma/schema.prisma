@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -13,139 +9,190 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           Int      @id @default(autoincrement())
-  name         String   @db.VarChar(100)
-  lastName     String   @db.VarChar(100)
-  email        String   @unique @db.VarChar(255)
-  passwordHash String
-  role         Role
-  createdAt    DateTime @default(now())
+model Role {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  description  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now())
+  users        User[]
+  roleRequests RoleRequest[] @relation("RequestedRole")
+}
 
-  courses     Course[]            @relation("CourseTeacher")
-  enrollments CourseStudent[]
-  progress    StudentProgress[]
-  quizResults StudentQuizResult[] 
+model User {
+  id                  Int               @id @default(autoincrement())
+  name                String
+  lastName            String
+  email               String            @unique
+  passwordHash        String
+  roleId              Int?
+  role                Role?             @relation(fields: [roleId], references: [id])
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @default(now())
+  roleRequests        RoleRequest[]
+  coursesTaught       Course[]          @relation("TeacherCourses")
+  enrolledCourses     CourseStudent[]
+  activitySubmissions ActivityStudent[]
+  studentAnswers      StudentAnswer[]
+}
+
+model RoleRequestStatus {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now())
+  requests    RoleRequest[]
+}
+
+model RoleRequest {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  requestedRoleId Int
+  statusId        Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+
+  user          User               @relation(fields: [userId], references: [id])
+  requestedRole Role               @relation("RequestedRole", fields: [requestedRoleId], references: [id])
+  status        RoleRequestStatus? @relation(fields: [statusId], references: [id])
+}
+
+model ActivityType {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now())
+  activities  Activity[]
+}
+
+model QuestionType {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now())
+  questions   Question[]
 }
 
 model Course {
-  id          Int      @id @default(autoincrement())
-  title       String   @db.VarChar(255)
+  id          Int             @id @default(autoincrement())
+  name        String
   description String?
-  teacherId   Int
-  createdAt   DateTime @default(now())
-
-  teacher         User              @relation("CourseTeacher", fields: [teacherId], references: [id])
-  students        CourseStudent[]
-  contents        CourseContent[]
-  StudentProgress StudentProgress[]
+  inviteCode  String          @unique
+  teacherId   Int?
+  teacher     User?           @relation("TeacherCourses", fields: [teacherId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @default(now())
+  students    CourseStudent[]
+  contents    CourseContent[]
+  activities  Activity[]
 }
 
 model CourseStudent {
-  id         Int      @id @default(autoincrement())
-  courseId   Int
-  studentId  Int
-  enrolledAt DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  studentId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 
-  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id])
+  student User   @relation(fields: [studentId], references: [id])
+}
 
-  @@unique([courseId, studentId])
+model ContentType {
+  id          Int             @id @default(autoincrement())
+  name        String          @unique
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @default(now())
+  contents    CourseContent[]
 }
 
 model CourseContent {
-  id          Int         @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
+  courseId      Int
+  title         String
+  description   String?
+  file          String?
+  contentTypeId Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  course      Course      @relation(fields: [courseId], references: [id])
+  contentType ContentType @relation(fields: [contentTypeId], references: [id])
+}
+
+model Activity {
+  id          Int       @id @default(autoincrement())
   courseId    Int
-  title       String      @db.VarChar(255)
-  contentType ContentType
-  contentText String?
-  resourceUrl String?
-  orderIndex  Int
-  createdAt   DateTime    @default(now())
-
-  course          Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  quiz            Quiz?
-  StudentProgress StudentProgress[]
-
-  @@unique([courseId, orderIndex]) // Ensures unique order per course
-}
-
-model Quiz {
-  id          Int     @id @default(autoincrement())
-  contentId   Int     @unique
-  title       String  @db.VarChar(255)
+  title       String
   description String?
+  typeId      Int
+  dueDate     DateTime?
+  file        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
 
-  content   CourseContent       @relation(fields: [contentId], references: [id], onDelete: Cascade)
-  questions QuizQuestion[]
-  results   StudentQuizResult[]
+  course    Course            @relation(fields: [courseId], references: [id])
+  type      ActivityType      @relation(fields: [typeId], references: [id])
+  students  ActivityStudent[]
+  questions Question[]
 }
 
-model QuizQuestion {
-  id           Int          @id @default(autoincrement())
-  quizId       Int
-  questionText String
-  questionType QuestionType
-  orderIndex   Int
+model ActivityStudent {
+  id         Int      @id @default(autoincrement())
+  activityId Int
+  studentId  Int
+  submitted  Boolean  @default(false)
+  grade      Float?
+  feedback   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
 
-  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  answers QuizAnswer[]
-
-  @@unique([quizId, orderIndex]) // Ensures unique order per quiz
+  activity Activity @relation(fields: [activityId], references: [id])
+  student  User     @relation(fields: [studentId], references: [id])
 }
 
-model QuizAnswer {
-  id         Int     @id @default(autoincrement())
+model Question {
+  id            Int      @id @default(autoincrement())
+  activityId    Int
+  content       String
+  typeId        Int
+  questionOrder Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  activity       Activity        @relation(fields: [activityId], references: [id])
+  type           QuestionType    @relation(fields: [typeId], references: [id])
+  options        AnswerOption[]
+  studentAnswers StudentAnswer[]
+}
+
+model AnswerOption {
+  id         Int      @id @default(autoincrement())
   questionId Int
-  answerText String
-  isCorrect  Boolean @default(false)
+  text       String
+  isCorrect  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
 
-  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question Question        @relation(fields: [questionId], references: [id])
+  answers  StudentAnswer[]
 }
 
-model StudentProgress {
-  id               Int       @id @default(autoincrement())
-  studentId        Int
-  courseId         Int
-  contentId        Int
-  completed        Boolean   @default(false)
-  score            Decimal? // Use Decimal instead of Float
-  timeSpentMinutes Int       @default(0)
-  completedAt      DateTime?
+model StudentAnswer {
+  id             Int      @id @default(autoincrement())
+  questionId     Int
+  studentId      Int
+  answerText     String?
+  answerOptionId Int?
+  answerDate     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
 
-  student User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course  Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  content CourseContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, contentId])
-}
-
-model StudentQuizResult {
-  id          Int      @id @default(autoincrement())
-  studentId   Int
-  quizId      Int
-  score       Decimal  @default(0.0)
-  attemptedAt DateTime @default(now())
-
-  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-}
-
-enum Role {
-  student
-  teacher
-}
-
-enum ContentType {
-  text
-  quiz
-  audio
-  pdf
-  interactive
-}
-
-enum QuestionType {
-  multiple_choice
-  true_false
-  open
+  question     Question      @relation(fields: [questionId], references: [id])
+  student      User          @relation(fields: [studentId], references: [id])
+  answerOption AnswerOption? @relation(fields: [answerOptionId], references: [id])
 }

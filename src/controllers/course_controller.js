@@ -1,106 +1,252 @@
 import { PrismaClient } from "@prisma/client";
+import { nanoid } from "nanoid";
+import Roles from "../models/roles.js";
+
 
 const prisma = new PrismaClient();
 //Get all courses
 export const getAllCourses = async (req, res) => {
   //get professor
-  const teacherId = req.body.id;
+  const professorId = req.id;
   try {
+    //Check if user has permissions
+    const tempUser = await prisma.user.findUnique({
+      where: {
+        id: professorId,
+      },
+      include: {
+        role: true,
+      },
+    });
+    console.log(tempUser);
+    if (!tempUser) {
+      return res
+        .status(404)
+        .json({ ok: false, message: "Usuario no encontrado" });
+    }
+    if (tempUser.role.name === Roles.student) {
+      return res.status(404).json({
+        ok: false,
+        message: "No tienes permisos para crear cursos",
+      });
+    }
     //Get all course
     const courses = await prisma.course.findMany({
-      where: { teacherId },
-      include: { students: true, contents: true },
+      where: { teacherId: professorId },
     });
     //response
     res.status(201).json({
       ok: true,
       course: courses,
+      message: "All courses were found succesfully",
     });
   } catch (error) {
-    res.status(500).json({ ok: false, error: "Error al obtener los cursos." });
+    console.log(error);
+    res
+      .status(500)
+      .json({ ok: false, message: "Error al obtener los cursos." });
   }
 };
 
 //Create new course
 export const createNewCourse = async (req, res) => {
-  const { title, description } = req.body;
-  const teacherId = req.id;
-
-  if (!title || !description || !teacherId) {
+  const { name, description } = req.body;
+  const professorId = req.id;
+  console.log("Creating a new course");
+  //Check all parameters are available
+  if (!name || !description || !professorId) {
     res.status(400).json({
       ok: false,
-      message: "Todos los parametros son requeridos",
+      message: "Tdoos los parametros son requeridos",
     });
     return;
   }
 
   try {
+    //Check if user has permissions
+    const tempUser = await prisma.user.findUnique({
+      where: {
+        id: professorId,
+      },
+      include: {
+        role: true,
+      },
+    });
+    console.log(tempUser);
+    if (!tempUser) {
+      return res
+        .status(404)
+        .json({ ok: false, message: "Usuario no encontrado" });
+    }
+    if (tempUser.role.name === Roles.student) {
+      return res.status(404).json({
+        ok: false,
+        message: "No tienes permisos para crear cursos",
+      });
+    }
+
+    //Generate invite code
+    let inviteCode;
+    let isUnique;
+    while (!isUnique) {
+      inviteCode = nanoid(8);
+      const existing = await prisma.course.findUnique({
+        where: {
+          inviteCode,
+        },
+      });
+      if (!existing) isUnique = true;
+    }
+    //Create new course
     const newCourse = await prisma.course.create({
       data: {
-        title,
+        name,
         description,
-        teacherId,
+        teacherId: professorId,
+        inviteCode,
       },
     });
     res.status(201).json({
       ok: true,
       course: newCourse,
+      message: "Course created succesfully",
     });
   } catch (error) {
     console.log("Error", error);
 
-    res.status(500).json({ ok: false, error: "Error al crear el curso." });
+    res.status(500).json({ ok: false, message: "Error al crear el curso." });
   }
 };
 
 //Get course by id
 export const getCourseById = async (req, res) => {
   const courseId = parseInt(req.params.id);
+  const professorId = req.id;
   try {
+    //Check if user has permissions
+    const tempUser = await prisma.user.findUnique({
+      where: {
+        id: professorId,
+      },
+      include: {
+        role: true,
+      },
+    });
+    console.log(tempUser);
+    if (!tempUser) {
+      return res
+        .status(404)
+        .json({ ok: false, message: "Usuario no encontrado" });
+    }
+    if (tempUser.role.name === Roles.student) {
+      return res.status(404).json({
+        ok: false,
+        message: "No tienes permisos para crear cursos",
+      });
+    }
+
+    //get specific course
+
     const course = await prisma.course.findUnique({
       where: { id: courseId },
-      include: { students: true, contents: true },
+      include: { courseStudents: true, courseContents: true },
     });
     if (!course) return res.status(404).json({ error: "Curso no encontrado." });
     res.status(201).json({
       ok: true,
       course: course,
+      message: "Curso encontrado",
     });
   } catch (error) {
-    res.status(500).json({ ok: false, error: "Error al obtener el curso." });
+    res.status(500).json({ ok: false, message: "Error al obtener el curso." });
   }
 };
 
 //Update course info
 export const updateCourseInfo = async (req, res) => {
   const courseId = parseInt(req.params.id);
-  const { title, description } = req.body;
-  if (!title || !description) {
+  const { name, description } = req.body;
+  const professorId = req.id;
+  if (!name && !description) {
     res.status(400).json({
       ok: false,
-      message: "Todos los parametros son requeridos",
+      message: "Se necesita al menos un campo para actualizar",
     });
     return;
   }
 
   try {
+    //Check if user has permissions
+    const tempUser = await prisma.user.findUnique({
+      where: {
+        id: professorId,
+      },
+      include: {
+        role: true,
+      },
+    });
+    console.log(tempUser);
+    if (!tempUser) {
+      return res
+        .status(404)
+        .json({ ok: false, message: "Usuario no encontrado" });
+    }
+    if (tempUser.role.name === Roles.student) {
+      return res.status(404).json({
+        ok: false,
+        message: "No tienes permisos para crear cursos",
+      });
+    }
+
+    // Construir el objeto dinámico de actualización
+    const dataToUpdate = {};
+    if (name) dataToUpdate.name = name;
+    if (description) dataToUpdate.description = description;
+
+    //Update values
     const updated = await prisma.course.update({
       where: { id: courseId },
-      data: { title, description },
+      data: dataToUpdate,
     });
     res.status(201).json({
       ok: true,
       course: updated,
+      message: "Course updated succesfully",
     });
   } catch (error) {
-    res.status(500).json({ ok: false, error: "Error al actualizar el curso." });
+    res
+      .status(500)
+      .json({ ok: false, message: "Error al actualizar el curso." });
   }
 };
 
 //Delete course
 export const deleteCourseInfo = async (req, res) => {
   const courseId = parseInt(req.params.id);
+  const professorId = req.id;
   try {
+    //Check if user has permissions
+    const tempUser = await prisma.user.findUnique({
+      where: {
+        id: professorId,
+      },
+      include: {
+        role: true,
+      },
+    });
+    console.log(tempUser);
+    if (!tempUser) {
+      return res
+        .status(404)
+        .json({ ok: false, message: "Usuario no encontrado" });
+    }
+    if (tempUser.role.name === Roles.student) {
+      return res.status(404).json({
+        ok: false,
+        message: "No tienes permisos para crear cursos",
+      });
+    }
+    //Delete course
     await prisma.course.delete({ where: { id: courseId } });
     res
       .status(201)
@@ -109,3 +255,4 @@ export const deleteCourseInfo = async (req, res) => {
     res.status(500).json({ ok: false, error: "Error al eliminar el curso." });
   }
 };
+

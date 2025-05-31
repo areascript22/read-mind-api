@@ -5,6 +5,7 @@
 
 -- ============ BASE TABLES ============
 
+
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL,
@@ -19,7 +20,24 @@ CREATE TABLE users (
     lastName VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     passwordHash TEXT NOT NULL,
-    roleId INTEGER REFERENCES roles(id),
+    roleId INTEGER REFERENCES role(id),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE roleRequestStatus(
+	id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+	description TEXT,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE roleRequest (
+    id SERIAL PRIMARY KEY,
+    userId INTEGER NOT NULL REFERENCES users(id),
+    requestedRoleId INTEGER NOT NULL REFERENCES roles(id),
+    status INTEGER REFERENCES roleRequestStatus(id),
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -142,12 +160,23 @@ CREATE TABLE studentAnswers (
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
 -- ===============================
 -- INITIAL DATA (Optional)
 -- ===============================
 
 -- Roles
-INSERT INTO roles (name) VALUES ('student'), ('teacher'), ('admin'), ('superuser');
+INSERT INTO roles (name, description) VALUES 
+('student', 'Regular student enrolled in a course'),
+('professor', 'Instructor who manages and evaluates the course'),
+('admin', 'Administrator with management permissions'),
+('superuser', 'Superuser with full access to all resources');
+
+-- Role request status 
+INSERT INTO roleRequestStatus (name, description) VALUES 
+('pending', 'The role request has been submitted and is waiting for review or approval by an administrator'),
+('aproved', 'The role request has been reviewed and granted. The user now has the requested role'),
+('rejected', 'The role request was reviewed and denied. The user will not receive the requested role');
 
 -- Activity Types
 INSERT INTO activityTypes (name, description) VALUES 

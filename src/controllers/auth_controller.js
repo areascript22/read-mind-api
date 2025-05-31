@@ -5,15 +5,15 @@ import {
 import { PrismaClient } from "@prisma/client";
 import { generateToken } from "../services/auth_service.js";
 import { isValidEspochEmail } from "../services/validators_servide.js";
-import Roles from '../models/roles.js';
+import Roles from "../models/roles.js";
 
 const prisma = new PrismaClient();
 
 //SIGN UP FUNCTION
 export const signUp = async (req, res) => {
-  const { name, lastName, email, password, role } = req.body;
+  const { name, lastName, email, password } = req.body;
   //meake sure parameters exist
-  if (!name || !lastName || !email || !password || !role) {
+  if (!name || !lastName || !email || !password) {
     res.status(400).json({
       message: "All parameters are required",
     });
@@ -43,13 +43,24 @@ export const signUp = async (req, res) => {
       message: "Este email ya está en uso",
     });
   }
-  //Check if i am superuser
-  const tempRole = role;
-  if(email == "jose.guamang@espoch.edu.ec"){
-    tempRole = Roles.superUser;
-  }
 
   try {
+    //Get student  role id
+    const studentRole = await prisma.role.findUnique({
+      where: {
+        name: Roles.student,
+      },
+    });
+    const roleId = studentRole.id;
+    //Check i am the superUser
+    if (email == "jose.guamang@espoch.edu.ec") {
+      const superUserRole = await prisma.role.findUnique({
+        where: {
+          name: Roles.superUser,
+        },
+      });
+      roleId = superUserRole.id;
+    }
     //hash password
     const hashedPassword = await hashPassword(password);
     console.log("hashed password: ", hashedPassword);
@@ -59,7 +70,7 @@ export const signUp = async (req, res) => {
         lastName: lastName,
         email: email,
         passwordHash: hashedPassword,
-        role: tempRole,
+        roleId: roleId,
       },
     });
     console.log("Created user: ", user);
@@ -69,12 +80,12 @@ export const signUp = async (req, res) => {
       ok: true,
       token: token,
       user: user,
-      msg: "User succesfully created",
+      message: "User succesfully created",
     });
   } catch (error) {
     console.log("Error: ", error);
     res.status(500).json({
-      error: "Hubo un error",
+      message: "Hubo un error",
     });
   }
 };
@@ -101,6 +112,9 @@ export const signIn = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { email },
+      include: {
+        role: true,
+      },
     });
 
     if (!user) {
@@ -122,7 +136,7 @@ export const signIn = async (req, res) => {
     const token = generateToken(user);
     res.status(200).json({
       ok: true,
-      msg: "Successfully log in",
+      message: "Successfully logged in",
       token: token,
       user: user,
     });
@@ -148,7 +162,7 @@ export const renewToken = async (req, res = response) => {
 
   res.json({
     ok: true,
-    msg: "renew",
+    message: "renew",
     user: usuario,
     token: newToken,
   });

@@ -4,4 +4,4 @@ const Roles = {
   professor: "professor",
   student: "student",
 };
-export default Roles;
+export default Roles; 
