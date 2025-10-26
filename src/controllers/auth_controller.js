@@ -3,16 +3,16 @@ import {
   hashPassword,
 } from "../services/password_service.js";
 import { PrismaClient } from "@prisma/client";
-import { generateToken } from "../services/auth_service.js";
+import { generateEmailtoken, generateToken } from "../services/auth_service.js";
 import { isValidEspochEmail } from "../services/validators_servide.js";
 import Roles from "../models/roles.js";
+import { sendEmail } from "../services/email_service.js";
 
 const prisma = new PrismaClient();
 
-//SIGN UP FUNCTION
-export const signUp = async (req, res) => {
+export const signUp = async (req, res) => { 
   const { name, lastName, email, password } = req.body;
-  //meake sure parameters exist
+
   if (!name || !lastName || !email || !password) {
     res.status(400).json({
       message: "All parameters are required",
@@ -21,7 +21,6 @@ export const signUp = async (req, res) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  //Check if it is ESPOCH email
   const isvalidEmail = isValidEspochEmail(email);
   if (!isvalidEmail) {
     console.log("No Email valido");
@@ -32,8 +31,6 @@ export const signUp = async (req, res) => {
     return;
   }
 
-  //Check if email is already in usertry {
-  // Check if user already exists
   const existingUser = await prisma.user.findUnique({
     where: { email: normalizedEmail },
   });
@@ -45,14 +42,13 @@ export const signUp = async (req, res) => {
   }
 
   try {
-    //Get student  role id
     const studentRole = await prisma.role.findUnique({
       where: {
         name: Roles.student,
       },
     });
-    const roleId = studentRole.id;
-    //Check i am the superUser
+    let roleId = studentRole.id;
+
     if (email == "jose.guamang@espoch.edu.ec") {
       const superUserRole = await prisma.role.findUnique({
         where: {
@@ -61,9 +57,8 @@ export const signUp = async (req, res) => {
       });
       roleId = superUserRole.id;
     }
-    //hash password
+
     const hashedPassword = await hashPassword(password);
-    console.log("hashed password: ", hashedPassword);
     const user = await prisma.user.create({
       data: {
         name: name,
@@ -72,9 +67,19 @@ export const signUp = async (req, res) => {
         passwordHash: hashedPassword,
         roleId: roleId,
       },
+      include: {
+        role: true,
+      },
     });
-    console.log("Created user: ", user);
-    //token
+
+    const verificationToken = generateEmailtoken(user);
+    const verificationLink = `http://localhost:3000/api/auth/verify_email?token=${verificationToken}`;
+    await sendEmail(
+      user.email,
+      "Verifica tu cuenta",
+      `Hola ${user.name}, verifica tu correo haciendo clic aquí: ${verificationLink}`
+    );
+
     const token = generateToken(user);
     res.status(201).json({
       ok: true,
@@ -90,7 +95,33 @@ export const signUp = async (req, res) => {
   }
 };
 
-//SIGN IN FUNCTION
+export const verifyEmail = async (req, res) => {
+  const email = req.email;
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    if (user.emailVerified) {
+      return res.status(200).json({ message: "Correo ya verificado" });
+    }
+
+    await prisma.user.update({
+      where: { email },
+      data: { emailVerified: true },
+    });
+
+    res.status(201).json({
+      ok: true,
+      message: "Email verified successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error verifyinig email" });
+  }
+};
+
 export const signIn = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -99,7 +130,7 @@ export const signIn = async (req, res) => {
     });
     return;
   }
-  //Check if it is ESPOCH email
+
   const isvalidEmail = isValidEspochEmail(email);
   if (!isvalidEmail) {
     console.log("Email is not valid (@espoch.edu.ec)");
@@ -149,21 +180,73 @@ export const signIn = async (req, res) => {
 };
 
 export const renewToken = async (req, res = response) => {
-  //Const uid
-  const id = req.id;
+  try {
+    //Const uid
+    const id = req.id;
 
-  //Obtner el usuario por el UID
-  const usuario = await prisma.user.findUnique({
-    where: { id },
-  });
+    //Obtner el usuario por el UID
+    const usuario = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        role: true,
+      },
+    });
 
-  //generate new JWT
-  const newToken = await generateToken(usuario);
+    //generate new JWT
+    const newToken = await generateToken(usuario);
 
-  res.json({
-    ok: true,
-    message: "renew",
-    user: usuario,
-    token: newToken,
-  });
+    res.status(200).json({
+      ok: true,
+      message: "renew",
+      user: usuario,
+      token: newToken,
+    });
+  } catch (error) {
+    console.log("Error renew token: ", error);
+    res.status(500).json({
+      ok: false,
+      message: "No se pudo renovar el token",
+    });
+  }
+};
+
+export const renewUser = async (req, res = response) => {
+  try {
+    //Const uid
+    const id = req.id;
+
+    //Obtner el usuario por el UID
+    const usuario = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        role: true,
+      },
+    });
+
+    if (!usuario) {
+      res.status(404).json({
+        message: "User not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      ok: true,
+      message: "Usuario actualizado",
+      user: usuario,
+    });
+  } catch (error) {
+    console.log("Error renew token: ", error);
+    res.status(500).json({
+      ok: false,
+      message: "No se pudo renovar el token",
+    });
+  }
+};
+
+export const sendVerificationEmail = async (req, res) => {
+  try {
+  } catch (error) {
+    console.log("Error sending verification email: ", error);
+  }
 };

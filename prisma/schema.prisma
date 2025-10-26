@@ -14,7 +14,7 @@ model Role {
   name         String        @unique
   description  String?
   createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   users        User[]
   roleRequests RoleRequest[] @relation("RequestedRole")
 }
@@ -25,15 +25,17 @@ model User {
   lastName            String
   email               String            @unique
   passwordHash        String
+  emailVerified       Boolean           @default(false)
   roleId              Int?
   role                Role?             @relation(fields: [roleId], references: [id])
   createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
   roleRequests        RoleRequest[]
   coursesTaught       Course[]          @relation("TeacherCourses")
   enrolledCourses     CourseStudent[]
-  activitySubmissions ActivityStudent[]
-  studentAnswers      StudentAnswer[]
+  activityCompletions ActivityCompletion[] 
+
+  paraphraseResults   ParaphraseResult[]   // relación inversa añadida
 }
 
 model RoleRequestStatus {
@@ -41,7 +43,7 @@ model RoleRequestStatus {
   name        String        @unique
   description String?
   createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   requests    RoleRequest[]
 }
 
@@ -51,42 +53,23 @@ model RoleRequest {
   requestedRoleId Int
   statusId        Int?
   createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   user          User               @relation(fields: [userId], references: [id])
   requestedRole Role               @relation("RequestedRole", fields: [requestedRoleId], references: [id])
   status        RoleRequestStatus? @relation(fields: [statusId], references: [id])
 }
 
-model ActivityType {
-  id          Int        @id @default(autoincrement())
-  name        String     @unique
-  description String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @default(now())
-  activities  Activity[]
-}
-
-model QuestionType {
-  id          Int        @id @default(autoincrement())
-  name        String     @unique
-  description String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @default(now())
-  questions   Question[]
-}
-
 model Course {
-  id          Int             @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
   description String?
-  inviteCode  String          @unique
+  inviteCode  String    @unique
   teacherId   Int?
-  teacher     User?           @relation("TeacherCourses", fields: [teacherId], references: [id])
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @default(now())
+  teacher     User?     @relation("TeacherCourses", fields: [teacherId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   students    CourseStudent[]
-  contents    CourseContent[]
   activities  Activity[]
 }
 
@@ -95,104 +78,81 @@ model CourseStudent {
   courseId  Int
   studentId Int
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  course  Course @relation(fields: [courseId], references: [id])
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   student User   @relation(fields: [studentId], references: [id])
-}
 
-model ContentType {
-  id          Int             @id @default(autoincrement())
-  name        String          @unique
-  description String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @default(now())
-  contents    CourseContent[]
-}
-
-model CourseContent {
-  id            Int      @id @default(autoincrement())
-  courseId      Int
-  title         String
-  description   String?
-  file          String?
-  contentTypeId Int
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now())
-
-  course      Course      @relation(fields: [courseId], references: [id])
-  contentType ContentType @relation(fields: [contentTypeId], references: [id])
+  @@unique([courseId, studentId])
 }
 
 model Activity {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   courseId    Int
   title       String
   description String?
-  typeId      Int
   dueDate     DateTime?
-  file        String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  course    Course            @relation(fields: [courseId], references: [id])
-  type      ActivityType      @relation(fields: [typeId], references: [id])
-  students  ActivityStudent[]
-  questions Question[]
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  aiReading   AIReading?
+  paraphrase  Paraphrase?        // relación inversa añadida
+  completions ActivityCompletion[]
 }
 
-model ActivityStudent {
+model AIReading {
   id         Int      @id @default(autoincrement())
-  activityId Int
-  studentId  Int
-  submitted  Boolean  @default(false)
-  grade      Float?
-  feedback   String?
+  activityId Int      @unique
+  content    String
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  activity Activity @relation(fields: [activityId], references: [id])
-  student  User     @relation(fields: [studentId], references: [id])
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
 }
 
-model Question {
+model Paraphrase {
+  id         Int      @id @default(autoincrement())
+  activityId Int      @unique
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  results  ParaphraseResult[]
+}
+
+model ParaphraseResult {
   id            Int      @id @default(autoincrement())
-  activityId    Int
-  content       String
-  typeId        Int
-  questionOrder Int      @default(1)
+  paraphraseId  Int
+  userId        Int
+  userAttempt   String
+  similarity    Int
+  fluency       Int
+  originality   Int
+  feedback      String?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  activity       Activity        @relation(fields: [activityId], references: [id])
-  type           QuestionType    @relation(fields: [typeId], references: [id])
-  options        AnswerOption[]
-  studentAnswers StudentAnswer[]
+  paraphrase Paraphrase @relation(fields: [paraphraseId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([paraphraseId, userId])
 }
 
-model AnswerOption {
+
+model ActivityCompletion {
   id         Int      @id @default(autoincrement())
-  questionId Int
-  text       String
-  isCorrect  Boolean  @default(false)
+  studentId  Int
+  activityId Int
+  completed  Boolean  @default(false)
+  reward     Int      @default(0)
+
+  student    User     @relation(fields: [studentId], references: [id])
+  activity   Activity @relation(fields: [activityId], references: [id])
+
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  question Question        @relation(fields: [questionId], references: [id])
-  answers  StudentAnswer[]
-}
-
-model StudentAnswer {
-  id             Int      @id @default(autoincrement())
-  questionId     Int
-  studentId      Int
-  answerText     String?
-  answerOptionId Int?
-  answerDate     DateTime @default(now())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now())
-
-  question     Question      @relation(fields: [questionId], references: [id])
-  student      User          @relation(fields: [studentId], references: [id])
-  answerOption AnswerOption? @relation(fields: [answerOptionId], references: [id])
+  @@unique([studentId, activityId])
 }

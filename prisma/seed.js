@@ -45,39 +45,39 @@ async function main() {
   });
 
   // Insert Activity Types
-  await prisma.activityType.createMany({
-    data: [
-      { name: "assignment", description: "Teacher-assigned tasks" },
-      { name: "homework", description: "Homework to be done at home" },
-      { name: "evaluation", description: "Tests or exams" },
-    ],
-    skipDuplicates: true,
-  });
+  // await prisma.activityType.createMany({
+  //   data: [
+  //     { name: "assignment", description: "Teacher-assigned tasks" },
+  //     { name: "homework", description: "Homework to be done at home" },
+  //     { name: "evaluation", description: "Tests or exams" },
+  //   ],
+  //   skipDuplicates: true,
+  // });
 
   // Insert Question Types
-  await prisma.questionType.createMany({
-    data: [
-      {
-        name: "multiple_choice",
-        description: "Question with multiple options",
-      },
-      { name: "free_text", description: "Open-ended written response" },
-      { name: "boolean", description: "Yes/No question" },
-    ],
-    skipDuplicates: true,
-  });
+  // await prisma.questionType.createMany({
+  //   data: [
+  //     {
+  //       name: "multiple_choice",
+  //       description: "Question with multiple options",
+  //     },
+  //     { name: "free_text", description: "Open-ended written response" },
+  //     { name: "boolean", description: "Yes/No question" },
+  //   ],
+  //   skipDuplicates: true,
+  // });
 
   // Insert Content Types
-  await prisma.contentType.createMany({
-    data: [
-      { name: "announcement", description: "Text notice from teacher" },
-      { name: "pdf", description: "PDF document" },
-      { name: "image", description: "Image file" },
-      { name: "video", description: "Video material" },
-      { name: "link", description: "External link to resource" },
-    ],
-    skipDuplicates: true,
-  });
+  // await prisma.contentType.createMany({
+  //   data: [
+  //     { name: "announcement", description: "Text notice from teacher" },
+  //     { name: "pdf", description: "PDF document" },
+  //     { name: "image", description: "Image file" },
+  //     { name: "video", description: "Video material" },
+  //     { name: "link", description: "External link to resource" },
+  //   ],
+  //   skipDuplicates: true,
+  // });
 
   console.log("✅ Datos iniciales insertados correctamente");
 }

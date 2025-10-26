@@ -7,7 +7,7 @@ import {
 } from "../controllers/course_content_controller.js";
 const router = express.Router();
 
-router.post("/:idCourse", validateJwt, createCourseContent);
+router.post("/:idCourse/aiReading", validateJwt, createCourseContent);
 router.put("/:idContent", validateJwt, updateCourseContent);
 router.delete("/:idContent", validateJwt, deleteCourseContent);
 

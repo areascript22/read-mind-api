@@ -1,7 +1,7 @@
 const Roles = {
-  superUser: "superUser",
-  admin: "admin",
-  professor: "professor",
   student: "student",
+  professor: "professor",
+  admin: "admin",
+  superUser: "superUser",
 };
-export default Roles; 
+export default Roles;

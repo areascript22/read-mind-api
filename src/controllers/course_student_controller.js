@@ -2,26 +2,24 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export const enrollStudentInACourse = async (req, res) => {
-  const studentId = req.id; // se asume que proviene del middleware de autenticación
-  const courseId = parseInt(req.params.idCourse);
+  const studentId = req.id;
+  const { inviteCode } = req.body;
 
   try {
-    // 1. Validar que el curso existe
     const course = await prisma.course.findUnique({
-      where: { id: courseId },
+      where: { inviteCode },
     });
 
     if (!course) {
       return res.status(404).json({
         ok: false,
-        message: "El curso no existe",
+        message: "El curso con este código de invitación no existe",
       });
     }
 
-    // 2. Verificar si ya está inscrito
     const existingEnrollment = await prisma.courseStudent.findFirst({
       where: {
-        courseId,
+        courseId: course.id,
         studentId,
       },
     });
@@ -33,22 +31,20 @@ export const enrollStudentInACourse = async (req, res) => {
       });
     }
 
-    // 3. Inscribir al estudiante
-    const enroll = await prisma.courseStudent.create({
+    await prisma.courseStudent.create({
       data: {
-        course: { connect: { id: courseId } },
+        course: { connect: { id: course.id } },
         student: { connect: { id: studentId } },
       },
     });
 
-    console.log("Resultado de la inscripción:", enroll);
-    res.status(201).json({
+    return res.status(201).json({
       ok: true,
       message: "Estudiante matriculado exitosamente",
     });
   } catch (error) {
     console.error("Error al matricular estudiante:", error);
-    res.status(500).json({
+    return res.status(500).json({
       ok: false,
       error: "Error al matricular estudiante",
     });
@@ -56,41 +52,90 @@ export const enrollStudentInACourse = async (req, res) => {
 };
 
 export const unenrollStudentFromCourse = async (req, res) => {
-  const studentId = req.id; // asumimos que viene del middleware de autenticación
+  const studentId = req.id;
   const courseId = parseInt(req.params.idCourse);
 
   try {
-    // 1. Verificar si la inscripción existe
-    const enrollment = await prisma.courseStudent.findFirst({
+    const deletedEnrollment = await prisma.courseStudent.delete({
       where: {
-        courseId,
-        studentId,
+        courseId_studentId: {
+          courseId,
+          studentId,
+        },
       },
     });
 
-    if (!enrollment) {
+    return res.status(200).json({
+      ok: true,
+      message: "Estudiante desmatriculado exitosamente",
+      data: deletedEnrollment,
+    });
+  } catch (error) {
+    if (error.code === "P2025") {
+      // Prisma: registro no encontrado
       return res.status(404).json({
         ok: false,
         message: "El estudiante no está inscrito en este curso",
       });
     }
 
-    // 2. Eliminar la inscripción
-    await prisma.courseStudent.delete({
-      where: {
-        id: enrollment.id,
-      },
-    });
-
-    res.status(200).json({
-      ok: true,
-      message: "Estudiante desmatriculado exitosamente",
-    });
-  } catch (error) {
     console.error("Error al desmatricular estudiante:", error);
-    res.status(500).json({
+    return res.status(500).json({
       ok: false,
       error: "Error al desmatricular estudiante",
     });
+  }
+};
+
+export const getAllEnrolledCourses = async (req, res) => {
+  try {
+    const studentId = req.id;
+    const enrolledCourses = await prisma.courseStudent.findMany({
+      where: { studentId: Number(studentId) },
+      include: {
+        course: {
+          include: {
+            teacher: {
+              select: { id: true, name: true, lastName: true, email: true },
+            },
+          },
+        },
+      },
+    });
+
+    const courses = enrolledCourses.map((e) => e.course);
+
+    res.status(200).json({ ok: true, courses: courses });
+  } catch (error) {
+    console.error("Error fetching enrolled courses:", error);
+    res
+      .status(500)
+      .json({ ok: false, message: "Error fetching enrolled courses" });
+  }
+};
+
+export const getAllStudentsInCourse = async (req, res) => {
+  try {
+    const courseId = parseInt(req.params.idCourse);
+
+    const studentsInCourse = await prisma.courseStudent.findMany({
+      where: { courseId: Number(courseId) },
+      include: {
+        student: {
+          include: {
+            role: true,
+          },
+        },
+      },
+    });
+
+    const students = studentsInCourse.map((e) => e.student);
+
+    res.status(200).json({ ok: true, students: students });
+  } catch (error) {
+    console.error("Error fetching students in course:", error);
+    res
+      .status(500)
+      .json({ ok: false, message: "Error fetching students in course" });
   }
 };
