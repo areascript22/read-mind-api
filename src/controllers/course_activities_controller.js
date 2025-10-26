@@ -64,79 +64,6 @@ export const createAIReading = async (req, res) => {
   }
 };
 
-export const createParaphrase = async (req, res) => {
-  try {
-    const { courseId, title, description, dueDate, content } = req.body;
-
-    // ✅ Validación básica
-    if (!courseId || !title || !content) {
-      return res.status(400).json({
-        success: false,
-        message: "courseId, title y content son obligatorios.",
-      });
-    }
-
-    // 1️⃣ Crear la actividad base
-    const activity = await prisma.activity.create({
-      data: {
-        courseId,
-        title,
-        description,
-        dueDate: dueDate ? new Date(dueDate) : null,
-      },
-    });
-
-    if (!activity || !activity.id) {
-      return res.status(500).json({
-        success: false,
-        message: "No se pudo crear la actividad base (Activity).",
-      });
-    }
-
-    // 2️⃣ Crear el registro de Paraphrase
-    const paraphrase = await prisma.paraphrase.create({
-      data: {
-        activityId: activity.id,
-        content,
-      },
-      include: { activity: true },
-    });
-
-    // ⚠️ Verificar si realmente se creó el Paraphrase
-    if (!paraphrase || !paraphrase.id) {
-      // En caso de error, eliminar la Activity creada
-      await prisma.activity.delete({ where: { id: activity.id } });
-
-      return res.status(500).json({
-        success: false,
-        message: "No se pudo crear la actividad de parafraseo (Paraphrase).",
-      });
-    }
-
-    // ✅ Si todo fue bien
-    res.status(201).json({
-      success: true,
-      message: "Actividad de parafraseo creada exitosamente.",
-      data: paraphrase,
-    });
-  } catch (error) {
-    console.error("Error al crear ParaphraseActivity:", error);
-
-
-    if (error?.meta?.target === "activityId") {
-      await prisma.activity.deleteMany({
-        where: { id: activity?.id || undefined },
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: "Error interno al crear la actividad de parafraseo.",
-      error: error.message,
-    });
-  }
-};
-
 export const getAllActivities = async (req, res) => {
   try {
     const courseId = parseInt(req.params.idCourse);
@@ -231,7 +158,6 @@ export const updateAIReading = async (req, res) => {
     const activityId = parseInt(req.params.activityId);
     const { content } = req.body;
 
-    // Verificar que el AIReading exista
     const aiReading = await prisma.aIReading.findUnique({
       where: { activityId },
     });
@@ -243,7 +169,6 @@ export const updateAIReading = async (req, res) => {
       });
     }
 
-    // Actualizar AIReading
     const updatedAIReading = await prisma.aIReading.update({
       where: { activityId },
       data: {
@@ -263,5 +188,174 @@ export const updateAIReading = async (req, res) => {
       success: false,
       message: "Internal server error",
     });
+  }
+};
+
+// --- Paraphrase Attempt ---
+export const createParaphraseAttempt = async (req, res) => {
+  try {
+    const {
+      aiReadingId,
+      accuracyScore,
+      coverageScore,
+      clarityScore,
+      feedback,
+    } = req.body;
+    const userId = req.id;
+
+    if (
+      !aiReadingId ||
+      accuracyScore == null ||
+      coverageScore == null ||
+      clarityScore == null
+    ) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    const attempt = await prisma.paraphraseAttempt.create({
+      data: {
+        aiReadingId,
+        userId,
+        accuracyScore,
+        coverageScore,
+        clarityScore,
+        feedback,
+      },
+    });
+
+    return res.status(201).json({
+      message: "Paraphrase attempt created successfully.",
+      data: attempt,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Failed to create paraphrase attempt." });
+  }
+};
+
+// --- Main Idea Attempt ---
+export const createMainIdeaAttempt = async (req, res) => {
+  try {
+    const {
+      aiReadingId,
+      accuracyScore,
+      coverageScore,
+      clarityScore,
+      feedback,
+    } = req.body;
+    const userId = req.id;
+
+    if (
+      !aiReadingId ||
+      accuracyScore == null ||
+      coverageScore == null ||
+      clarityScore == null
+    ) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    const attempt = await prisma.mainIdeaAttempt.create({
+      data: {
+        aiReadingId,
+        userId,
+        accuracyScore,
+        coverageScore,
+        clarityScore,
+        feedback,
+      },
+    });
+
+    return res.status(201).json({
+      message: "Main idea attempt created successfully.",
+      data: attempt,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Failed to create main idea attempt." });
+  }
+};
+
+// --- Summary Attempt ---
+export const createSummaryAttempt = async (req, res) => {
+  try {
+    const {
+      aiReadingId,
+      accuracyScore,
+      coverageScore,
+      clarityScore,
+      feedback,
+    } = req.body;
+    const userId = req.id;
+
+    if (
+      !aiReadingId ||
+      accuracyScore == null ||
+      coverageScore == null ||
+      clarityScore == null
+    ) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    const attempt = await prisma.summaryAttempt.create({
+      data: {
+        aiReadingId,
+        userId,
+        accuracyScore,
+        coverageScore,
+        clarityScore,
+        feedback,
+      },
+    });
+
+    return res.status(201).json({
+      message: "Summary attempt created successfully.",
+      data: attempt,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Failed to create summary attempt." });
+  }
+};
+
+// --- AI Reading Audio Event ---
+export const createAIReadingAttempt = async (req, res) => {
+  try {
+    const {
+      aiReadingId,
+      timeSinceEnterSec,
+      timeSinceNextActivitySec,
+      playCount,
+    } = req.body;
+    const userId = req.id;
+
+    if (!aiReadingId) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    const event = await prisma.aIReadingAttempt.create({
+      data: {
+        aiReadingId,
+        userId,
+        timeSinceEnterSec: timeSinceEnterSec || 0,
+        timeSinceNextActivitySec: timeSinceNextActivitySec || 0,
+        playCount: playCount || 0,
+      },
+    });
+
+    return res.status(201).json({
+      message: "AI reading audio event created successfully.",
+      data: event,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Failed to create AI reading audio event." });
   }
 };
