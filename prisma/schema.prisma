@@ -35,7 +35,10 @@ model User {
   enrolledCourses     CourseStudent[]
   activityCompletions ActivityCompletion[] 
 
-  paraphraseResults   ParaphraseResult[]   // relación inversa añadida
+  paraphraseAttempts  ParaphraseAttempt[]
+  mainIdeaAttempts    MainIdeaAttempt[]
+  summaryAttempts     SummaryAttempt[]
+  audioEvents         AIReadingAttempt[]
 }
 
 model RoleRequestStatus {
@@ -97,7 +100,6 @@ model Activity {
 
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   aiReading   AIReading?
-  paraphrase  Paraphrase?        // relación inversa añadida
   completions ActivityCompletion[]
 }
 
@@ -109,35 +111,10 @@ model AIReading {
   updatedAt  DateTime @updatedAt
 
   activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
-}
-
-model Paraphrase {
-  id         Int      @id @default(autoincrement())
-  activityId Int      @unique
-  content    String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  results  ParaphraseResult[]
-}
-
-model ParaphraseResult {
-  id            Int      @id @default(autoincrement())
-  paraphraseId  Int
-  userId        Int
-  userAttempt   String
-  similarity    Int
-  fluency       Int
-  originality   Int
-  feedback      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  paraphrase Paraphrase @relation(fields: [paraphraseId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id])
-
-  @@unique([paraphraseId, userId])
+  paraphraseAttempts ParaphraseAttempt[]
+  mainIdeaAttempts   MainIdeaAttempt[]
+  summaryAttempts    SummaryAttempt[]
+  audioEvents        AIReadingAttempt[]
 }
 
 
@@ -155,4 +132,76 @@ model ActivityCompletion {
   updatedAt  DateTime @updatedAt
 
   @@unique([studentId, activityId])
+}
+
+model ParaphraseAttempt {
+  id              Int      @id @default(autoincrement())
+  aiReadingId     Int
+  userId          Int
+  accuracyScore   Int
+  coverageScore   Int
+  clarityScore    Int
+  feedback        String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  aiReading       AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@index([aiReadingId])
+  @@index([userId])
+}
+
+model MainIdeaAttempt {
+  id              Int      @id @default(autoincrement())
+  aiReadingId     Int
+  userId          Int
+  accuracyScore   Int
+  coverageScore   Int
+  clarityScore    Int
+  feedback        String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  aiReading       AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@index([aiReadingId])
+  @@index([userId])
+}
+
+model SummaryAttempt {
+  id              Int      @id @default(autoincrement())
+  aiReadingId     Int
+  userId          Int
+  accuracyScore   Int
+  coverageScore   Int
+  clarityScore    Int
+  feedback        String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  aiReading       AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@index([aiReadingId])
+  @@index([userId])
+}
+
+// --- Audio Events ---
+
+model AIReadingAttempt {
+  id                    Int      @id @default(autoincrement())
+  aiReadingId           Int
+  userId                Int
+  timeSinceEnterSec     Int      @default(0)
+  timeSinceNextActivitySec Int   @default(0)
+  playCount             Int      @default(0)
+  createdAt             DateTime @default(now())
+
+  aiReading   AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([aiReadingId])
+  @@index([userId])
 }
