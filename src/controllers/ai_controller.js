@@ -6,23 +6,34 @@ const prisma = new PrismaClient();
 
 export const generateParagrapth = async (req, res) => {
   try {
-    const { topic, environment } = req.body;
-    if (environment == "dev") {
+    const {
+      topic,
+      length = "medium",
+      complexity = "B1",
+      style = "informal",
+      environment,
+    } = req.body;
+
+    if (environment === "dev") {
       return res.status(200).json({
         ok: true,
         paragraph:
           "English is essential in universities because it's the global language of academia. Much of the world's most significant research, scholarly journals, and textbooks are published in English, making proficiency in the language a key to accessing a vast body of knowledge.",
       });
     }
+
     if (!topic) {
       return res.status(400).json({ error: "Topic is required" });
     }
-    const paragraph = await generateText(
-      `Write a short, informative paragraph about: ${topic}`
-    );
-    res.status(200).json({ ok: true, paragraph: paragraph });
+t
+    const prompt = `Write a ${length} paragraph about "${topic}".
+The paragraph should be written in ${style} style and suitable for a ${complexity} reader.`;
+
+    const paragraph = await generateText(prompt);
+
+    res.status(200).json({ ok: true, paragraph });
   } catch (e) {
-    console.error("Error generating paragraph 1:", e);
+    console.error("Error generating paragraph:", e);
     res
       .status(500)
       .json({ ok: false, message: "Failed to generate paragraph" });
