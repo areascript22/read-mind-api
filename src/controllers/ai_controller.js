@@ -14,6 +14,12 @@ export const generateParagrapth = async (req, res) => {
       environment,
     } = req.body;
 
+    console.log("topic:", topic);
+    console.log("length:", length);
+    console.log("complexity:", complexity);
+    console.log("style:", style);
+    console.log("environment:", environment);
+
     if (environment === "dev") {
       return res.status(200).json({
         ok: true,
@@ -25,7 +31,7 @@ export const generateParagrapth = async (req, res) => {
     if (!topic) {
       return res.status(400).json({ error: "Topic is required" });
     }
-t
+
     const prompt = `Write a ${length} paragraph about "${topic}".
 The paragraph should be written in ${style} style and suitable for a ${complexity} reader.`;
 
