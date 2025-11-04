@@ -3,12 +3,14 @@ const prisma = new PrismaClient();
 
 export const createAIReading = async (req, res) => {
   const courseId = parseInt(req.params.idCourse);
-  const { title, description, content, dueDate } = req.body;
+  const { title, description, content, dueDate, length, complexity, style } =
+    req.body;
 
-  if (!title || !content) {
+  // Validate required fields
+  if (!title || !content || !length || !complexity || !style) {
     return res.status(400).json({
       ok: false,
-      message: "Title and content are required",
+      message: "Title, content, length, complexity, and style are required",
     });
   }
 
@@ -37,6 +39,9 @@ export const createAIReading = async (req, res) => {
       data: {
         activityId: activity.id,
         content: content,
+        length: length,
+        complexity: complexity,
+        style: style,
       },
     });
 
@@ -46,6 +51,9 @@ export const createAIReading = async (req, res) => {
       description: activity.description,
       dueDate: activity.dueDate,
       content: aiReading.content,
+      length: aiReading.length,
+      complexity: aiReading.complexity,
+      style: aiReading.style,
       createdAt: activity.createdAt,
       updatedAt: activity.updatedAt,
     };
@@ -83,6 +91,9 @@ export const getAllActivities = async (req, res) => {
         type = "AIReading";
         details = {
           content: activity.aiReading.content,
+          length: activity.aiReading.length,
+          complexity: activity.aiReading.complexity,
+          style: activity.aiReading.style,
         };
       }
       // futuro:

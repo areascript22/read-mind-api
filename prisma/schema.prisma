@@ -39,6 +39,7 @@ model User {
   mainIdeaAttempts    MainIdeaAttempt[]
   summaryAttempts     SummaryAttempt[]
   audioEvents         AIReadingAttempt[]
+  userTranslations  UserTranslation[]
 }
 
 model RoleRequestStatus {
@@ -107,6 +108,9 @@ model AIReading {
   id         Int      @id @default(autoincrement())
   activityId Int      @unique
   content    String
+  length     String?   // e.g., Short, Medium, Long
+  complexity String?   // e.g., A1, A2, B1, B2
+  style      String?   // e.g., Informal, Formal, Academic, Storytelling
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -188,8 +192,6 @@ model SummaryAttempt {
   @@index([userId])
 }
 
-// --- Audio Events ---
-
 model AIReadingAttempt {
   id                    Int      @id @default(autoincrement())
   aiReadingId           Int
@@ -204,4 +206,33 @@ model AIReadingAttempt {
 
   @@index([aiReadingId])
   @@index([userId])
+}
+
+model Translation {
+  id                 Int       @id @default(autoincrement())
+  sourceText         String
+  sourceTextNormalized String  @db.Text 
+  translated         String    @db.Text
+  sourceLang         String    @default("en")
+  targetLang         String    @default("es")
+  timesUsed          Int       @default(1)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  userTranslations   UserTranslation[]
+
+  @@unique([sourceTextNormalized, sourceLang, targetLang])
+  @@index([sourceTextNormalized])
+}
+
+model UserTranslation {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  translationId  Int
+  createdAt      DateTime     @default(now())
+
+  user           User         @relation(fields: [userId], references: [id])
+  translation    Translation  @relation(fields: [translationId], references: [id])
+
+  @@unique([userId, translationId])
 }
