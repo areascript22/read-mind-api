@@ -10,6 +10,7 @@ import roleRequests from "./routes/role_request_route.js";
 import aiRoute from "./routes/ai_route.js";
 import userRoute from "./routes/user_route.js";
 import translationRoute from "./routes/translation_route.js";
+import progress from "./routes/activity_progress_route.js";
 
 const currentEnv = "dev"; //prod | dev
 const envFilePath = currentEnv === "prod" ? ".env.prod" : ".env";
@@ -28,5 +29,6 @@ app.use("/api/roleRequests", roleRequests);
 app.use("/api/ai", aiRoute);
 app.use("/api/user", userRoute);
 app.use("/api/translate", translationRoute);
+app.use("/api/progress", progress);
 
 export default app;

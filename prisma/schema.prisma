@@ -33,7 +33,7 @@ model User {
   roleRequests        RoleRequest[]
   coursesTaught       Course[]          @relation("TeacherCourses")
   enrolledCourses     CourseStudent[]
-  activityCompletions ActivityCompletion[] 
+  activityCompletions ActivityProgress[] 
 
   paraphraseAttempts  ParaphraseAttempt[]
   mainIdeaAttempts    MainIdeaAttempt[]
@@ -96,12 +96,14 @@ model Activity {
   title       String
   description String?
   dueDate     DateTime?
+  hasScoring  Boolean  @default(true)
+  maxScore    Int?     // 10, 20, 100, etc. - Null si no tiene puntaje
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   aiReading   AIReading?
-  completions ActivityCompletion[]
+  completions ActivityProgress[]
 }
 
 model AIReading {
@@ -122,12 +124,19 @@ model AIReading {
 }
 
 
-model ActivityCompletion {
+model ActivityProgress {
   id         Int      @id @default(autoincrement())
   studentId  Int
   activityId Int
   completed  Boolean  @default(false)
-  reward     Int      @default(0)
+  
+  totalProgress Int    @default(0) // 0-100%
+  totalScore    Int    @default(0) // Puntaje acumulado
+  
+  readingCompleted    Boolean @default(false)
+  paraphraseCompleted Boolean @default(false)  
+  mainIdeaCompleted   Boolean @default(false)
+  summaryCompleted    Boolean @default(false)
 
   student    User     @relation(fields: [studentId], references: [id])
   activity   Activity @relation(fields: [activityId], references: [id])

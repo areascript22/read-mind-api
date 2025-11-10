@@ -1,0 +1,14 @@
+import express from "express";
+import { validateJwt } from "../midlewares/jwt_validate.js";
+import {
+  createActivityProgress,
+  getAllActivityProgresses,
+  updateActivityProgress,
+} from "../controllers/activity_progress_controller.js";
+
+const router = express.Router();
+router.post("/:activityId", validateJwt, createActivityProgress);
+router.put("/:activityId", validateJwt, updateActivityProgress);
+router.get("/:userId", validateJwt, getAllActivityProgresses);
+
+export default router;

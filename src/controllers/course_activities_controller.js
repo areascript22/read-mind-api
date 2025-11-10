@@ -3,14 +3,29 @@ const prisma = new PrismaClient();
 
 export const createAIReading = async (req, res) => {
   const courseId = parseInt(req.params.idCourse);
-  const { title, description, content, dueDate, length, complexity, style } =
-    req.body;
+  const {
+    title,
+    description,
+    content,
+    dueDate,
+    length,
+    complexity,
+    style,
+    hasScoring,
+    maxScore,
+  } = req.body;
 
-  // Validate required fields
   if (!title || !content || !length || !complexity || !style) {
     return res.status(400).json({
       ok: false,
       message: "Title, content, length, complexity, and style are required",
+    });
+  }
+
+  if (hasScoring && (!maxScore || maxScore <= 0)) {
+    return res.status(400).json({
+      ok: false,
+      message: "maxScore is required when hasScoring is true",
     });
   }
 
@@ -26,30 +41,40 @@ export const createAIReading = async (req, res) => {
       });
     }
 
-    const activity = await prisma.activity.create({
-      data: {
-        courseId: courseId,
-        title: title,
-        description: description || null,
-        dueDate: dueDate ? new Date(dueDate) : null,
-      },
+    const result = await prisma.$transaction(async (prisma) => {
+      const activity = await prisma.activity.create({
+        data: {
+          courseId: courseId,
+          title: title,
+          hasScoring: hasScoring || false,
+          maxScore: hasScoring ? maxScore : null,
+          description: description || null,
+          dueDate: dueDate ? new Date(dueDate) : null,
+        },
+      });
+
+      const aiReading = await prisma.aIReading.create({
+        data: {
+          activityId: activity.id,
+          content: content,
+          length: length,
+          complexity: complexity,
+          style: style,
+        },
+      });
+
+      return { activity, aiReading };
     });
 
-    const aiReading = await prisma.aIReading.create({
-      data: {
-        activityId: activity.id,
-        content: content,
-        length: length,
-        complexity: complexity,
-        style: style,
-      },
-    });
+    const { activity, aiReading } = result;
 
     const responseBody = {
       id: activity.id,
       title: activity.title,
       description: activity.description,
       dueDate: activity.dueDate,
+      hasScoring: activity.hasScoring,
+      maxScore: activity.maxScore,
       content: aiReading.content,
       length: aiReading.length,
       complexity: aiReading.complexity,
@@ -61,13 +86,14 @@ export const createAIReading = async (req, res) => {
     return res.status(201).json({
       ok: true,
       message: "AIReading activity created successfully",
-      aiReading: responseBody,
+      data: responseBody,
     });
   } catch (error) {
     console.error("Error creating AIReading activity:", error);
     return res.status(500).json({
       ok: false,
       message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -202,7 +228,6 @@ export const updateAIReading = async (req, res) => {
   }
 };
 
-// --- Paraphrase Attempt ---
 export const createParaphraseAttempt = async (req, res) => {
   try {
     const {
@@ -246,7 +271,6 @@ export const createParaphraseAttempt = async (req, res) => {
   }
 };
 
-// --- Main Idea Attempt ---
 export const createMainIdeaAttempt = async (req, res) => {
   try {
     const {
@@ -290,7 +314,6 @@ export const createMainIdeaAttempt = async (req, res) => {
   }
 };
 
-// --- Summary Attempt ---
 export const createSummaryAttempt = async (req, res) => {
   try {
     const {
@@ -334,7 +357,6 @@ export const createSummaryAttempt = async (req, res) => {
   }
 };
 
-// --- AI Reading Audio Event ---
 export const createAIReadingAttempt = async (req, res) => {
   try {
     const {
