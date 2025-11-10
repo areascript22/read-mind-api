@@ -116,6 +116,7 @@ export const getAllActivities = async (req, res) => {
       if (activity.aiReading) {
         type = "AIReading";
         details = {
+          aiReadingId: activity.aiReading.id,
           content: activity.aiReading.content,
           length: activity.aiReading.length,
           complexity: activity.aiReading.complexity,
@@ -133,6 +134,7 @@ export const getAllActivities = async (req, res) => {
 
       return {
         id: activity.id,
+
         title: activity.title,
         description: activity.description,
         dueDate: activity.dueDate,
@@ -232,18 +234,18 @@ export const createParaphraseAttempt = async (req, res) => {
   try {
     const {
       aiReadingId,
-      accuracyScore,
-      coverageScore,
-      clarityScore,
+      similarityScore,
+      fluencyScore,
+      originalityScore,
       feedback,
     } = req.body;
     const userId = req.id;
 
     if (
       !aiReadingId ||
-      accuracyScore == null ||
-      coverageScore == null ||
-      clarityScore == null
+      similarityScore == null ||
+      fluencyScore == null ||
+      originalityScore == null
     ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
@@ -252,9 +254,9 @@ export const createParaphraseAttempt = async (req, res) => {
       data: {
         aiReadingId,
         userId,
-        accuracyScore,
-        coverageScore,
-        clarityScore,
+        similarityScore,
+        fluencyScore,
+        originalityScore,
         feedback,
       },
     });
@@ -276,8 +278,8 @@ export const createMainIdeaAttempt = async (req, res) => {
     const {
       aiReadingId,
       accuracyScore,
-      coverageScore,
       clarityScore,
+      concisenessScore,
       feedback,
     } = req.body;
     const userId = req.id;
@@ -285,8 +287,8 @@ export const createMainIdeaAttempt = async (req, res) => {
     if (
       !aiReadingId ||
       accuracyScore == null ||
-      coverageScore == null ||
-      clarityScore == null
+      clarityScore == null ||
+      concisenessScore == null
     ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
@@ -296,8 +298,8 @@ export const createMainIdeaAttempt = async (req, res) => {
         aiReadingId,
         userId,
         accuracyScore,
-        coverageScore,
         clarityScore,
+        concisenessScore,
         feedback,
       },
     });

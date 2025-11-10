@@ -11,6 +11,7 @@ import aiRoute from "./routes/ai_route.js";
 import userRoute from "./routes/user_route.js";
 import translationRoute from "./routes/translation_route.js";
 import progress from "./routes/activity_progress_route.js";
+import attempts from "./routes/activity_attempts.js";
 
 const currentEnv = "dev"; //prod | dev
 const envFilePath = currentEnv === "prod" ? ".env.prod" : ".env";
@@ -30,5 +31,6 @@ app.use("/api/ai", aiRoute);
 app.use("/api/user", userRoute);
 app.use("/api/translate", translationRoute);
 app.use("/api/progress", progress);
+app.use("/api/attempts", attempts);
 
 export default app;

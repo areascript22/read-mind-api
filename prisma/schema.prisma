@@ -20,26 +20,26 @@ model Role {
 }
 
 model User {
-  id                  Int               @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   name                String
   lastName            String
-  email               String            @unique
+  email               String             @unique
   passwordHash        String
-  emailVerified       Boolean           @default(false)
+  emailVerified       Boolean            @default(false)
   roleId              Int?
-  role                Role?             @relation(fields: [roleId], references: [id])
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  role                Role?              @relation(fields: [roleId], references: [id])
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
   roleRequests        RoleRequest[]
-  coursesTaught       Course[]          @relation("TeacherCourses")
+  coursesTaught       Course[]           @relation("TeacherCourses")
   enrolledCourses     CourseStudent[]
-  activityCompletions ActivityProgress[] 
+  activityCompletions ActivityProgress[]
 
-  paraphraseAttempts  ParaphraseAttempt[]
-  mainIdeaAttempts    MainIdeaAttempt[]
-  summaryAttempts     SummaryAttempt[]
-  audioEvents         AIReadingAttempt[]
-  userTranslations  UserTranslation[]
+  paraphraseAttempts ParaphraseAttempt[]
+  mainIdeaAttempts   MainIdeaAttempt[]
+  summaryAttempts    SummaryAttempt[]
+  audioEvents        AIReadingAttempt[]
+  userTranslations   UserTranslation[]
 }
 
 model RoleRequestStatus {
@@ -65,14 +65,14 @@ model RoleRequest {
 }
 
 model Course {
-  id          Int       @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   name        String
   description String?
-  inviteCode  String    @unique
+  inviteCode  String          @unique
   teacherId   Int?
-  teacher     User?     @relation("TeacherCourses", fields: [teacherId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  teacher     User?           @relation("TeacherCourses", fields: [teacherId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   students    CourseStudent[]
   activities  Activity[]
 }
@@ -91,17 +91,17 @@ model CourseStudent {
 }
 
 model Activity {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   courseId    Int
   title       String
   description String?
   dueDate     DateTime?
-  hasScoring  Boolean  @default(true)
-  maxScore    Int?     // 10, 20, 100, etc. - Null si no tiene puntaje
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  hasScoring  Boolean   @default(true)
+  maxScore    Int? // 10, 20, 100, etc. - Null si no tiene puntaje
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
   aiReading   AIReading?
   completions ActivityProgress[]
 }
@@ -110,138 +110,137 @@ model AIReading {
   id         Int      @id @default(autoincrement())
   activityId Int      @unique
   content    String
-  length     String?   // e.g., Short, Medium, Long
-  complexity String?   // e.g., A1, A2, B1, B2
-  style      String?   // e.g., Informal, Formal, Academic, Storytelling
+  length     String? // e.g., Short, Medium, Long
+  complexity String? // e.g., A1, A2, B1, B2
+  style      String? // e.g., Informal, Formal, Academic, Storytelling
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  activity           Activity            @relation(fields: [activityId], references: [id], onDelete: Cascade)
   paraphraseAttempts ParaphraseAttempt[]
   mainIdeaAttempts   MainIdeaAttempt[]
   summaryAttempts    SummaryAttempt[]
   audioEvents        AIReadingAttempt[]
 }
 
-
 model ActivityProgress {
-  id         Int      @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   studentId  Int
   activityId Int
-  completed  Boolean  @default(false)
-  
-  totalProgress Int    @default(0) // 0-100%
-  totalScore    Int    @default(0) // Puntaje acumulado
-  
+  completed  Boolean @default(false)
+
+  totalProgress Int @default(0) // 0-100%
+  totalScore    Int @default(0) // Puntaje acumulado
+
   readingCompleted    Boolean @default(false)
-  paraphraseCompleted Boolean @default(false)  
+  paraphraseCompleted Boolean @default(false)
   mainIdeaCompleted   Boolean @default(false)
   summaryCompleted    Boolean @default(false)
 
-  student    User     @relation(fields: [studentId], references: [id])
-  activity   Activity @relation(fields: [activityId], references: [id])
+  student  User     @relation(fields: [studentId], references: [id])
+  activity Activity @relation(fields: [activityId], references: [id])
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([studentId, activityId])
 }
 
 model ParaphraseAttempt {
-  id              Int      @id @default(autoincrement())
-  aiReadingId     Int
-  userId          Int
-  accuracyScore   Int
-  coverageScore   Int
-  clarityScore    Int
-  feedback        String?  @db.Text
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               Int      @id @default(autoincrement())
+  aiReadingId      Int
+  userId           Int
+  similarityScore  Int
+  fluencyScore     Int
+  originalityScore Int
+  feedback         String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  aiReading       AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
-  user            User      @relation(fields: [userId], references: [id])
+  aiReading AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
 
   @@index([aiReadingId])
   @@index([userId])
 }
 
 model MainIdeaAttempt {
-  id              Int      @id @default(autoincrement())
-  aiReadingId     Int
-  userId          Int
-  accuracyScore   Int
-  coverageScore   Int
-  clarityScore    Int
-  feedback        String?  @db.Text
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               Int      @id @default(autoincrement())
+  aiReadingId      Int
+  userId           Int
+  accuracyScore    Int
+  clarityScore     Int
+  concisenessScore Int
+  feedback         String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  aiReading       AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
-  user            User      @relation(fields: [userId], references: [id])
+  aiReading AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
 
   @@index([aiReadingId])
   @@index([userId])
 }
 
 model SummaryAttempt {
-  id              Int      @id @default(autoincrement())
-  aiReadingId     Int
-  userId          Int
-  accuracyScore   Int
-  coverageScore   Int
-  clarityScore    Int
-  feedback        String?  @db.Text
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  aiReadingId   Int
+  userId        Int
+  accuracyScore Int
+  coverageScore Int
+  clarityScore  Int
+  feedback      String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  aiReading       AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
-  user            User      @relation(fields: [userId], references: [id])
+  aiReading AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
 
   @@index([aiReadingId])
   @@index([userId])
 }
 
 model AIReadingAttempt {
-  id                    Int      @id @default(autoincrement())
-  aiReadingId           Int
-  userId                Int
-  timeSinceEnterSec     Int      @default(0)
-  timeSinceNextActivitySec Int   @default(0)
-  playCount             Int      @default(0)
-  createdAt             DateTime @default(now())
+  id                       Int      @id @default(autoincrement())
+  aiReadingId              Int
+  userId                   Int
+  timeSinceEnterSec        Int      @default(0)
+  timeSinceNextActivitySec Int      @default(0)
+  playCount                Int      @default(0)
+  createdAt                DateTime @default(now())
 
-  aiReading   AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id])
+  aiReading AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
 
   @@index([aiReadingId])
   @@index([userId])
 }
 
 model Translation {
-  id                 Int       @id @default(autoincrement())
-  sourceText         String
-  sourceTextNormalized String  @db.Text 
-  translated         String    @db.Text
-  sourceLang         String    @default("en")
-  targetLang         String    @default("es")
-  timesUsed          Int       @default(1)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id                   Int      @id @default(autoincrement())
+  sourceText           String
+  sourceTextNormalized String   @db.Text
+  translated           String   @db.Text
+  sourceLang           String   @default("en")
+  targetLang           String   @default("es")
+  timesUsed            Int      @default(1)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  userTranslations   UserTranslation[]
+  userTranslations UserTranslation[]
 
   @@unique([sourceTextNormalized, sourceLang, targetLang])
   @@index([sourceTextNormalized])
 }
 
 model UserTranslation {
-  id             Int          @id @default(autoincrement())
-  userId         Int
-  translationId  Int
-  createdAt      DateTime     @default(now())
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  translationId Int
+  createdAt     DateTime @default(now())
 
-  user           User         @relation(fields: [userId], references: [id])
-  translation    Translation  @relation(fields: [translationId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+  translation Translation @relation(fields: [translationId], references: [id])
 
   @@unique([userId, translationId])
 }

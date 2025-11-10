@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-
 const prisma = new PrismaClient();
 
 export const createActivityProgress = async (req, res) => {
@@ -210,6 +209,7 @@ export const createActivityProgress = async (req, res) => {
     });
   }
 };
+
 export const updateActivityProgress = async (req, res) => {
   const activityId = parseInt(req.params.activityId);
   const studentId = req.id;
@@ -381,7 +381,6 @@ export const updateActivityProgress = async (req, res) => {
   }
 };
 
-// GET /api/users/:userId/activities/progress
 export const getAllActivityProgresses = async (req, res) => {
   const userId = parseInt(req.params.userId);
 
