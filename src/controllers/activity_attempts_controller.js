@@ -1,14 +1,17 @@
 import { PrismaClient } from "@prisma/client";
+import { parse } from "path";
 const prisma = new PrismaClient();
 
 export const getParaphraseAttempts = async (req, res) => {
   try {
-    console.log("Getting all paraphrases");
     const userId = req.id;
+    const aireadingId = parseInt(req.params.aireadingId);
+    const { targetUserId } = req.query;
 
     const paraphraseAttempts = await prisma.paraphraseAttempt.findMany({
       where: {
-        userId: userId,
+        userId: parseInt(targetUserId),
+        aiReadingId: aireadingId,
       },
       include: {
         user: {
@@ -58,10 +61,13 @@ export const getParaphraseAttempts = async (req, res) => {
 export const getMainIdeaAttempts = async (req, res) => {
   try {
     const userId = req.id;
+    const aireadingId = parseInt(req.params.aireadingId);
+    const { targetUserId } = req.query;
 
     const mainIdeaAttempts = await prisma.mainIdeaAttempt.findMany({
       where: {
-        userId: userId,
+        userId: parseInt(targetUserId),
+        aiReadingId: aireadingId,
       },
       include: {
         user: {
@@ -111,10 +117,13 @@ export const getMainIdeaAttempts = async (req, res) => {
 export const getSummaryAttempts = async (req, res) => {
   try {
     const userId = req.id;
+    const aireadingId = parseInt(req.params.aireadingId);
+    const { targetUserId } = req.query;
 
     const summaryAttempts = await prisma.summaryAttempt.findMany({
       where: {
-        userId: userId,
+        userId: parseInt(targetUserId),
+        aiReadingId: aireadingId,
       },
       include: {
         user: {

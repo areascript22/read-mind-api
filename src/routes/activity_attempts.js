@@ -7,8 +7,8 @@ import {
 } from "../controllers/activity_attempts_controller.js";
 
 const router = express.Router();
-router.get("/paraphrase", validateJwt, getParaphraseAttempts);
-router.get("/mainIdea", validateJwt, getMainIdeaAttempts);
-router.get("/summary", validateJwt, getSummaryAttempts);
+router.get("/paraphrase/:aireadingId", validateJwt, getParaphraseAttempts);
+router.get("/mainIdea/:aireadingId", validateJwt, getMainIdeaAttempts);
+router.get("/summary/:aireadingId", validateJwt, getSummaryAttempts);
 
 export default router;

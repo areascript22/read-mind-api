@@ -1,5 +1,3 @@
-// schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -101,9 +99,8 @@ model Activity {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  aiReading   AIReading?
-  completions ActivityProgress[]
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  aiReading AIReading?
 }
 
 model AIReading {
@@ -121,13 +118,14 @@ model AIReading {
   mainIdeaAttempts   MainIdeaAttempt[]
   summaryAttempts    SummaryAttempt[]
   audioEvents        AIReadingAttempt[]
+  completions        ActivityProgress[]
 }
 
 model ActivityProgress {
-  id         Int     @id @default(autoincrement())
-  studentId  Int
-  activityId Int
-  completed  Boolean @default(false)
+  id          Int     @id @default(autoincrement())
+  studentId   Int
+  aiReadingId Int
+  completed   Boolean @default(false)
 
   totalProgress Int @default(0) // 0-100%
   totalScore    Int @default(0) // Puntaje acumulado
@@ -137,13 +135,13 @@ model ActivityProgress {
   mainIdeaCompleted   Boolean @default(false)
   summaryCompleted    Boolean @default(false)
 
-  student  User     @relation(fields: [studentId], references: [id])
-  activity Activity @relation(fields: [activityId], references: [id])
+  student   User      @relation(fields: [studentId], references: [id])
+  aiReading AIReading @relation(fields: [aiReadingId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([studentId, activityId])
+  @@unique([studentId, aiReadingId])
 }
 
 model ParaphraseAttempt {
@@ -243,4 +241,10 @@ model UserTranslation {
   translation Translation @relation(fields: [translationId], references: [id])
 
   @@unique([userId, translationId])
+}
+
+model GlobalConfig {
+  id               Int      @id @default(autoincrement())
+  buildNumber Int  //actually it's the build number
+  updatedAt        DateTime @default(now())
 }
