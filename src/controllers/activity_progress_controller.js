@@ -1,9 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-
 const prisma = new PrismaClient();
 
 export const createActivityProgress = async (req, res) => {
-  const activityId = parseInt(req.params.activityId);
+  const aiReadingId = parseInt(req.params.aiReadingId);
   const studentId = req.id;
 
   const {
@@ -31,31 +30,29 @@ export const createActivityProgress = async (req, res) => {
 
   try {
     // Verificar que la actividad existe y obtener el courseId
-    const activity = await prisma.activity.findUnique({
-      where: { id: activityId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            name: true,
-            teacherId: true,
-          },
-        },
-      },
+    const aiReading = await prisma.aIReading.findUnique({
+      where: { id: aiReadingId },
     });
 
-    if (!activity) {
+    if (!aiReading) {
       return res.status(404).json({
         ok: false,
-        message: "Activity not found",
+        message: "Reading Activity not found",
       });
     }
+
+    const activity = await prisma.activity.findUnique({
+      where: { id: aiReading.activityId },
+      include: {
+        course: true,
+      },
+    });
 
     // Verificar que el usuario esté matriculado en el curso
     const isEnrolled = await prisma.courseStudent.findFirst({
       where: {
         studentId: studentId,
-        courseId: activity.course.id,
+        courseId: activity.courseId,
       },
     });
 
@@ -69,44 +66,27 @@ export const createActivityProgress = async (req, res) => {
     // Verificar si ya existe un progress para esta actividad y estudiante
     const existingProgress = await prisma.activityProgress.findUnique({
       where: {
-        studentId_activityId: {
+        studentId_aiReadingId: {
           studentId: studentId,
-          activityId: activityId,
-        },
-      },
-      include: {
-        activity: {
-          select: {
-            title: true,
-            description: true,
-            hasScoring: true,
-            maxScore: true,
-            dueDate: true,
-            course: {
-              select: {
-                name: true,
-              },
-            },
-          },
+          aiReadingId: aiReadingId,
         },
       },
     });
 
-    // Si ya existe, retornar el progreso existente con status 200
     if (existingProgress) {
-      // Formatear la respuesta del progreso existente
       const formattedProgress = {
         progressId: existingProgress.id,
-        activityId: existingProgress.activityId,
-        title: existingProgress.activity.title,
-        description: existingProgress.activity.description,
-        courseName: existingProgress.activity.course.name,
+        activityId: activity.id,
+        aiReadingId: existingProgress.aiReadingId,
+        title: activity.title,
+        description: activity.description,
+        courseName: activity.course.name,
         completed: existingProgress.completed,
         totalProgress: existingProgress.totalProgress,
         totalScore: existingProgress.totalScore,
-        hasScoring: existingProgress.activity.hasScoring,
-        maxScore: existingProgress.activity.maxScore,
-        dueDate: existingProgress.activity.dueDate,
+        hasScoring: activity.hasScoring,
+        maxScore: activity.maxScore,
+        dueDate: activity.dueDate,
         updatedAt: existingProgress.updatedAt,
         subactivitiesCompleted: {
           reading: existingProgress.readingCompleted,
@@ -137,7 +117,7 @@ export const createActivityProgress = async (req, res) => {
     const activityProgress = await prisma.activityProgress.create({
       data: {
         studentId: studentId,
-        activityId: activityId,
+        aiReadingId: aiReadingId,
         completed: completed,
         totalProgress: totalProgress,
         totalScore: totalScore,
@@ -146,37 +126,22 @@ export const createActivityProgress = async (req, res) => {
         mainIdeaCompleted: mainIdeaCompleted || false,
         summaryCompleted: summaryCompleted || false,
       },
-      include: {
-        activity: {
-          select: {
-            title: true,
-            description: true,
-            hasScoring: true,
-            maxScore: true,
-            dueDate: true,
-            course: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
     });
 
     // Formatear la respuesta según la estructura requerida
     const formattedProgress = {
       progressId: activityProgress.id,
-      activityId: activityProgress.activityId,
-      title: activityProgress.activity.title,
-      description: activityProgress.activity.description,
-      courseName: activityProgress.activity.course.name,
+      activityId: activity.id,
+      aiReadingId: activityProgress.aiReadingId,
+      title: activity.title,
+      description: activity.description,
+      courseName: activity.course.name,
       completed: activityProgress.completed,
       totalProgress: activityProgress.totalProgress,
       totalScore: activityProgress.totalScore,
-      hasScoring: activityProgress.activity.hasScoring,
-      maxScore: activityProgress.activity.maxScore,
-      dueDate: activityProgress.activity.dueDate,
+      hasScoring: activity.hasScoring,
+      maxScore: activity.maxScore,
+      dueDate: activity.dueDate,
       updatedAt: activityProgress.updatedAt,
       subactivitiesCompleted: {
         reading: activityProgress.readingCompleted,
@@ -196,7 +161,7 @@ export const createActivityProgress = async (req, res) => {
       ),
     };
 
-    return res.status(201).json({
+    return res.status(200).json({
       ok: true,
       message: "Activity progress created successfully",
       data: formattedProgress,
@@ -210,8 +175,9 @@ export const createActivityProgress = async (req, res) => {
     });
   }
 };
+
 export const updateActivityProgress = async (req, res) => {
-  const activityId = parseInt(req.params.activityId);
+  const aiReadingId = parseInt(req.params.aiReadingId);
   const studentId = req.id;
 
   const {
@@ -241,31 +207,30 @@ export const updateActivityProgress = async (req, res) => {
   }
 
   try {
-    // Verificar que la actividad existe y obtener el courseId
-    const activity = await prisma.activity.findUnique({
-      where: { id: activityId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            name: true, // Agregar name para courseName
-          },
-        },
-      },
+    const aiReading = await prisma.aIReading.findUnique({
+      where: { id: aiReadingId },
     });
 
-    if (!activity) {
+    if (!aiReading) {
       return res.status(404).json({
         ok: false,
-        message: "Activity not found",
+        message: "Reading Activity not found",
       });
     }
+
+    // Verificar que la actividad existe y obtener el courseId
+    const activity = await prisma.activity.findUnique({
+      where: { id: aiReading.activityId },
+      include: {
+        course: true,
+      },
+    });
 
     // Verificar que el usuario esté matriculado en el curso
     const isEnrolled = await prisma.courseStudent.findFirst({
       where: {
         studentId: studentId,
-        courseId: activity.course.id,
+        courseId: activity.courseId,
       },
     });
 
@@ -279,9 +244,9 @@ export const updateActivityProgress = async (req, res) => {
     // Verificar que el progress exista antes de actualizar
     const existingProgress = await prisma.activityProgress.findUnique({
       where: {
-        studentId_activityId: {
+        studentId_aiReadingId: {
           studentId: studentId,
-          activityId: activityId,
+          aiReadingId: aiReadingId,
         },
       },
     });
@@ -310,43 +275,28 @@ export const updateActivityProgress = async (req, res) => {
     // ACTUALIZAR registro existente con include para obtener datos relacionados
     const activityProgress = await prisma.activityProgress.update({
       where: {
-        studentId_activityId: {
+        studentId_aiReadingId: {
           studentId: studentId,
-          activityId: activityId,
+          aiReadingId: aiReadingId,
         },
       },
       data: updateData,
-      include: {
-        activity: {
-          select: {
-            title: true,
-            description: true,
-            hasScoring: true,
-            maxScore: true,
-            dueDate: true,
-            course: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
     });
 
     // Formatear la respuesta según la estructura requerida
     const formattedProgress = {
       progressId: activityProgress.id,
-      activityId: activityProgress.activityId,
-      title: activityProgress.activity.title,
-      description: activityProgress.activity.description,
-      courseName: activityProgress.activity.course.name,
+      activityId: activity.id,
+      aiReadingId: activityProgress.aiReadingId,
+      title: activity.title,
+      description: activity.description,
+      courseName: activity.course.name,
       completed: activityProgress.completed,
       totalProgress: activityProgress.totalProgress,
       totalScore: activityProgress.totalScore,
-      hasScoring: activityProgress.activity.hasScoring,
-      maxScore: activityProgress.activity.maxScore,
-      dueDate: activityProgress.activity.dueDate,
+      hasScoring: activity.hasScoring,
+      maxScore: activity.maxScore,
+      dueDate: activity.dueDate,
       updatedAt: activityProgress.updatedAt,
       subactivitiesCompleted: {
         reading: activityProgress.readingCompleted,
@@ -381,9 +331,8 @@ export const updateActivityProgress = async (req, res) => {
   }
 };
 
-// GET /api/users/:userId/activities/progress
 export const getAllActivityProgresses = async (req, res) => {
-  const userId = parseInt(req.params.userId);
+  const userId = parseInt(req.params.userId, 10);
 
   try {
     // Verificar que el usuario existe
@@ -399,24 +348,18 @@ export const getAllActivityProgresses = async (req, res) => {
       });
     }
 
-    // Obtener todos los progress del usuario con información de la actividad
+    // Obtener todos los progress del usuario con información anidada:
+    // activityProgress -> aiReading -> activity -> course
     const activityProgresses = await prisma.activityProgress.findMany({
       where: {
         studentId: userId,
       },
       include: {
-        activity: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            hasScoring: true,
-            maxScore: true,
-            dueDate: true,
-            course: {
-              select: {
-                id: true,
-                name: true,
+        aiReading: {
+          include: {
+            activity: {
+              include: {
+                course: true,
               },
             },
           },
@@ -429,35 +372,44 @@ export const getAllActivityProgresses = async (req, res) => {
 
     // Formatear la respuesta
     const formattedProgresses = activityProgresses.map((progress) => {
+      const aiReading = progress.aiReading || null;
+      const activity = aiReading?.activity || null;
+      const course = activity?.course || null;
+
+      const subReading = !!progress.readingCompleted;
+      const subParaphrase = !!progress.paraphraseCompleted;
+      const subMainIdea = !!progress.mainIdeaCompleted;
+      const subSummary = !!progress.summaryCompleted;
+
+      const completedCount = [
+        subReading,
+        subParaphrase,
+        subMainIdea,
+        subSummary,
+      ].filter(Boolean).length;
+
       const progressData = {
         progressId: progress.id,
-        activityId: progress.activityId,
-        title: progress.activity.title,
-        description: progress.activity.description,
-        courseName: progress.activity.course.name,
-        completed: progress.completed,
-        totalProgress: progress.totalProgress,
-        totalScore: progress.totalScore,
-        hasScoring: progress.activity.hasScoring,
-        maxScore: progress.activity.maxScore,
-        dueDate: progress.activity.dueDate,
-        updatedAt: progress.updatedAt,
+        // activityId: si quieres el id de Activity (no del aiReading)
+        activityId: activity?.id ?? null,
+        aiReadingId: aiReading.id,
+        title: activity?.title ?? null,
+        description: activity?.description ?? null,
+        courseName: course?.name ?? null,
+        completed: !!progress.completed,
+        totalProgress: progress.totalProgress ?? 0,
+        totalScore: progress.totalScore ?? 0,
+        hasScoring: activity?.hasScoring ?? false,
+        maxScore: activity?.maxScore ?? null,
+        dueDate: activity?.dueDate ? activity.dueDate.toISOString() : null,
+        updatedAt: progress.updatedAt ? progress.updatedAt.toISOString() : null,
         subactivitiesCompleted: {
-          reading: progress.readingCompleted,
-          paraphrase: progress.paraphraseCompleted,
-          mainIdea: progress.mainIdeaCompleted,
-          summary: progress.summaryCompleted,
+          reading: subReading,
+          paraphrase: subParaphrase,
+          mainIdea: subMainIdea,
+          summary: subSummary,
         },
-        subactivitiesCompletionRate: Math.round(
-          ([
-            progress.readingCompleted,
-            progress.paraphraseCompleted,
-            progress.mainIdeaCompleted,
-            progress.summaryCompleted,
-          ].filter(Boolean).length /
-            4) *
-            100
-        ),
+        subactivitiesCompletionRate: Math.round((completedCount / 4) * 100),
       };
 
       return progressData;
@@ -467,10 +419,10 @@ export const getAllActivityProgresses = async (req, res) => {
     let averageScore = 0;
     if (formattedProgresses.length > 0) {
       const totalScores = formattedProgresses.reduce((sum, activity) => {
-        return sum + activity.totalScore;
+        return sum + (Number(activity.totalScore) || 0);
       }, 0);
       averageScore =
-        Math.round((totalScores / formattedProgresses.length) * 100) / 100; // Redondear a 2 decimales
+        Math.round((totalScores / formattedProgresses.length) * 100) / 100; // 2 decimales
     }
 
     return res.status(200).json({
@@ -493,7 +445,6 @@ export const getAllActivityProgresses = async (req, res) => {
           notStarted: formattedProgresses.filter((p) => p.totalProgress === 0)
             .length,
           averageScore: averageScore,
-          // Estadísticas adicionales
           totalActivitiesWithScoring: formattedProgresses.filter(
             (p) => p.hasScoring
           ).length,

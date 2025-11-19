@@ -7,8 +7,8 @@ import {
 } from "../controllers/activity_progress_controller.js";
 
 const router = express.Router();
-router.post("/:activityId", validateJwt, createActivityProgress);
-router.put("/:activityId", validateJwt, updateActivityProgress);
+router.post("/:aiReadingId", validateJwt, createActivityProgress);
+router.put("/:aiReadingId", validateJwt, updateActivityProgress);
 router.get("/:userId", validateJwt, getAllActivityProgresses);
 
 export default router;
