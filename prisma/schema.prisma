@@ -9,8 +9,8 @@ datasource db {
 
 model Role {
   id           Int           @id @default(autoincrement())
-  name         String        @unique
-  description  String?
+  name         String        @unique @db.VarChar(50)
+  description  String        @db.VarChar(255)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   users        User[]
@@ -19,10 +19,10 @@ model Role {
 
 model User {
   id                  Int                @id @default(autoincrement())
-  name                String
-  lastName            String
-  email               String             @unique
-  passwordHash        String
+  name                String             @db.VarChar(100)
+  lastName            String             @db.VarChar(100)
+  email               String             @unique @db.VarChar(255)
+  passwordHash        String             @db.VarChar(255)
   emailVerified       Boolean            @default(false)
   roleId              Int?
   role                Role?              @relation(fields: [roleId], references: [id])
@@ -38,12 +38,13 @@ model User {
   summaryAttempts    SummaryAttempt[]
   audioEvents        AIReadingAttempt[]
   userTranslations   UserTranslation[]
+  pushNotifications  PushNotification[]
 }
 
 model RoleRequestStatus {
   id          Int           @id @default(autoincrement())
-  name        String        @unique
-  description String?
+  name        String        @unique @db.VarChar(50)
+  description String        @db.VarChar(255)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   requests    RoleRequest[]
@@ -64,9 +65,9 @@ model RoleRequest {
 
 model Course {
   id          Int             @id @default(autoincrement())
-  name        String
-  description String?
-  inviteCode  String          @unique
+  name        String          @db.VarChar(150)
+  description String?         @db.VarChar(500)
+  inviteCode  String          @unique @db.VarChar(50)
   teacherId   Int?
   teacher     User?           @relation("TeacherCourses", fields: [teacherId], references: [id])
   createdAt   DateTime        @default(now())
@@ -91,8 +92,8 @@ model CourseStudent {
 model Activity {
   id          Int       @id @default(autoincrement())
   courseId    Int
-  title       String
-  description String?
+  title       String    @db.VarChar(200)
+  description String?   @db.VarChar(500)
   dueDate     DateTime?
   hasScoring  Boolean   @default(true)
   maxScore    Int? // 10, 20, 100, etc. - Null si no tiene puntaje
@@ -106,10 +107,10 @@ model Activity {
 model AIReading {
   id         Int      @id @default(autoincrement())
   activityId Int      @unique
-  content    String
-  length     String? // e.g., Short, Medium, Long
-  complexity String? // e.g., A1, A2, B1, B2
-  style      String? // e.g., Informal, Formal, Academic, Storytelling
+  content    String   @db.Text
+  length     String?  @db.VarChar(20) // e.g., Short, Medium, Long
+  complexity String?  @db.VarChar(10) // e.g., A1, A2, B1, B2
+  style      String?  @db.VarChar(50) // e.g., Informal, Formal, Academic, Storytelling
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -216,11 +217,11 @@ model AIReadingAttempt {
 
 model Translation {
   id                   Int      @id @default(autoincrement())
-  sourceText           String
+  sourceText           String   @db.VarChar(500)
   sourceTextNormalized String   @db.Text
   translated           String   @db.Text
-  sourceLang           String   @default("en")
-  targetLang           String   @default("es")
+  sourceLang           String   @default("en") @db.VarChar(60)
+  targetLang           String   @default("es") @db.VarChar(60)
   timesUsed            Int      @default(1)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -244,7 +245,51 @@ model UserTranslation {
 }
 
 model GlobalConfig {
-  id               Int      @id @default(autoincrement())
-  buildNumber Int  //actually it's the build number
-  updatedAt        DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  buildNumber Int //actually it's the build number
+  updatedAt   DateTime @default(now())
+}
+
+model NotificationType {
+  id            Int                @id @default(autoincrement())
+  name          String             @unique @db.VarChar(50) // ej: "ROLE_REQUEST", "COURSE_INVITE", "ACTIVITY_REMINDER"
+  description   String             @db.VarChar(255)
+  template      String             @db.VarChar(500) // Plantilla de mensaje con variables
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  notifications PushNotification[]
+}
+
+model PushNotification {
+  id             Int                        @id @default(autoincrement())
+  userId         Int
+  typeId         Int
+  title          String                     @db.VarChar(150)
+  message        String                     @db.Text
+  data           Json? // Datos adicionales: {courseId: 1, activityId: 5}
+  read           Boolean                    @default(false)
+  sentAt         DateTime                   @default(now())
+  readAt         DateTime?
+  expiresAt      DateTime? // Cuando la notificación deja de ser relevante
+  deliveryStatus NotificationDeliveryStatus @default(PENDING)
+
+  // Relaciones
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type NotificationType @relation(fields: [typeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, read])
+  @@index([userId, sentAt])
+  @@index([deliveryStatus])
+  @@index([expiresAt])
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  EXPIRED
 }
