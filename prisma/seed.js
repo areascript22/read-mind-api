@@ -44,40 +44,52 @@ async function main() {
     skipDuplicates: true, // evita duplicados si ya existen
   });
 
-  // Insert Activity Types
-  // await prisma.activityType.createMany({
-  //   data: [
-  //     { name: "assignment", description: "Teacher-assigned tasks" },
-  //     { name: "homework", description: "Homework to be done at home" },
-  //     { name: "evaluation", description: "Tests or exams" },
-  //   ],
-  //   skipDuplicates: true,
-  // });
-
-  // Insert Question Types
-  // await prisma.questionType.createMany({
-  //   data: [
-  //     {
-  //       name: "multiple_choice",
-  //       description: "Question with multiple options",
-  //     },
-  //     { name: "free_text", description: "Open-ended written response" },
-  //     { name: "boolean", description: "Yes/No question" },
-  //   ],
-  //   skipDuplicates: true,
-  // });
-
-  // Insert Content Types
-  // await prisma.contentType.createMany({
-  //   data: [
-  //     { name: "announcement", description: "Text notice from teacher" },
-  //     { name: "pdf", description: "PDF document" },
-  //     { name: "image", description: "Image file" },
-  //     { name: "video", description: "Video material" },
-  //     { name: "link", description: "External link to resource" },
-  //   ],
-  //   skipDuplicates: true,
-  // });
+  // Insert Notification Types
+  await prisma.notificationType.createMany({
+    data: [
+      {
+        name: "ROLE_REQUEST",
+        description: "Actualizaciones sobre solicitudes de rol",
+        template: "Solicitud de rol {status}",
+      },
+      {
+        name: "COURSE_INVITE",
+        description: "Invitaciones a cursos",
+        template: "Has sido invitado al curso {courseName}",
+      },
+      {
+        name: "ACTIVITY_ASSIGNED",
+        description: "Nuevas actividades asignadas",
+        template: "Nueva actividad: {activityTitle}",
+      },
+      {
+        name: "ACTIVITY_REMINDER",
+        description: "Recordatorios de actividades pendientes",
+        template: "Recordatorio: {activityTitle} vence {dueDate}",
+      },
+      {
+        name: "ROLE_APPROVED",
+        description: "Aprobación de solicitud de rol",
+        template: "Tu solicitud de rol {roleName} fue aprobada",
+      },
+      {
+        name: "GRADE_AVAILABLE",
+        description: "Calificaciones disponibles",
+        template: "Calificación disponible para {activityTitle}",
+      },
+      {
+        name: "SYSTEM_ANNOUNCEMENT",
+        description: "Anuncios del sistema",
+        template: "Anuncio del sistema: {message}",
+      },
+      {
+        name: "COURSE_ANNOUNCEMENT",
+        description: "Anuncios de cursos",
+        template: "Anuncio en {courseName}: {message}",
+      },
+    ],
+    skipDuplicates: true, // evita duplicados si ya existen
+  });
 
   console.log("✅ Datos iniciales insertados correctamente");
 }

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Translation" ALTER COLUMN "sourceLang" SET DATA TYPE VARCHAR(60),
+ALTER COLUMN "targetLang" SET DATA TYPE VARCHAR(60);
