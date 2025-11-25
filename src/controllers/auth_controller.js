@@ -10,7 +10,7 @@ import { sendEmail } from "../services/email_service.js";
 
 const prisma = new PrismaClient();
 
-export const signUp = async (req, res) => { 
+export const signUp = async (req, res) => {
   const { name, lastName, email, password } = req.body;
 
   if (!name || !lastName || !email || !password) {
@@ -21,14 +21,13 @@ export const signUp = async (req, res) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const isvalidEmail = isValidEspochEmail(email);
+
+  const isvalidEmail = isValidEspochEmail(normalizedEmail);
   if (!isvalidEmail) {
-    console.log("No Email valido");
-    res.status(400).json({
+    return res.status(400).json({
       ok: false,
-      message: "El email no es valido ",
+      message: "El email no es válido",
     });
-    return;
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -43,54 +42,71 @@ export const signUp = async (req, res) => {
 
   try {
     const studentRole = await prisma.role.findUnique({
-      where: {
-        name: Roles.student,
-      },
+      where: { name: Roles.student },
     });
+
     let roleId = studentRole.id;
 
-    if (email == "jose.guamang@espoch.edu.ec") {
+    // Super user override
+    if (normalizedEmail === "jose.guamang@espoch.edu.ec") {
       const superUserRole = await prisma.role.findUnique({
-        where: {
-          name: Roles.superUser,
-        },
+        where: { name: Roles.superUser },
       });
       roleId = superUserRole.id;
     }
 
     const hashedPassword = await hashPassword(password);
-    const user = await prisma.user.create({
-      data: {
-        name: name,
-        lastName: lastName,
-        email: email,
-        passwordHash: hashedPassword,
-        roleId: roleId,
-      },
-      include: {
-        role: true,
-      },
-    });
 
-    const verificationToken = generateEmailtoken(user);
+    // 🟦 TRANSACTION STARTS HERE
+    const result = await prisma.$transaction(async (tx) => {
+      // Create user
+      const user = await tx.user.create({
+        data: {
+          name: name.trim(),
+          lastName: lastName.trim(),
+          email: normalizedEmail,
+          passwordHash: hashedPassword,
+          roleId,
+        },
+        include: {
+          role: true,
+        },
+      });
+
+      // Create UserPreferences linked to this user
+      await tx.userPreferences.create({
+        data: {
+          userId: user.id,
+          // seenNotificationDialog defaults to false
+        },
+      });
+
+      return user;
+    });
+    // 🟦 TRANSACTION ENDS HERE
+
+    // Email verification
+    const verificationToken = generateEmailtoken(result);
     const verificationLink = `http://localhost:3000/api/auth/verify_email?token=${verificationToken}`;
+
     await sendEmail(
-      user.email,
+      result.email,
       "Verifica tu cuenta",
-      `Hola ${user.name}, verifica tu correo haciendo clic aquí: ${verificationLink}`
+      `Hola ${result.name}, verifica tu correo haciendo clic aquí: ${verificationLink}`
     );
 
-    const token = generateToken(user);
+    const jwtToken = generateToken(result);
+
     res.status(201).json({
       ok: true,
-      token: token,
-      user: user,
-      message: "User succesfully created",
+      token: jwtToken,
+      user: result,
+      message: "User successfully created",
     });
   } catch (error) {
     console.log("Error: ", error);
     res.status(500).json({
-      message: "Hubo un error",
+      message: "Hubo un error al crear el usuario",
     });
   }
 };

@@ -14,6 +14,7 @@ import progress from "./routes/activity_progress_route.js";
 import attempts from "./routes/activity_attempts.js";
 import globalConfigs from "./routes/global_configs_route.js";
 import notifications from "./routes/notifications_routes.js";
+import preferences from "./routes/user_preferences.js";
 
 const currentEnv = "dev"; //prod | dev
 const envFilePath = currentEnv === "prod" ? ".env.prod" : ".env";
@@ -35,6 +36,7 @@ app.use("/api/translate", translationRoute);
 app.use("/api/progress", progress);
 app.use("/api/attempts", attempts);
 app.use("/api/app", globalConfigs);
-app.use("/api", notifications);
+app.use("/api/notify", notifications);
+app.use("/api/preferences", preferences);
 
 export default app;
