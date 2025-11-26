@@ -239,11 +239,13 @@ model Translation {
   timesUsed            Int      @default(1)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+  readingId            Int
 
   userTranslations UserTranslation[]
 
-  @@unique([sourceTextNormalized, sourceLang, targetLang])
+  @@unique([sourceTextNormalized, sourceLang, targetLang, readingId])
   @@index([sourceTextNormalized])
+  @@index([readingId])
 }
 
 model UserTranslation {
