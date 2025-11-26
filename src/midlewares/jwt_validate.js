@@ -1,5 +1,11 @@
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 
@@ -52,6 +58,41 @@ export const validateEmailToken = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_EMAIL_SECRET);
     req.email = decoded.email; // Pasamos el email decodificado al controlador
     next(); // Todo bien, seguimos al controlador
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ message: "Token inválido o expirado" });
+  }
+};
+
+export const validateResetPasswordTokenHtml = (req, res, next) => {
+  const token = req.query.token;
+
+  if (!token) {
+    console.log("Token de restablecimiento faltante");
+    return res.sendFile(path.join(__dirname, "../html/reset_error.html"));
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_Password_RESET_SECRET);
+    req.email = decoded.email;
+    next();
+  } catch (error) {
+    console.error(error);
+    return res.sendFile(path.join(__dirname, "../html/reset_error.html"));
+  }
+};
+
+export const validateResetPasswordTokenJson = (req, res, next) => {
+  const token = req.query.token;
+
+  if (!token) {
+    return res.status(400).json({ message: "Token de contraseña faltante" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_Password_RESET_SECRET);
+    req.email = decoded.email;
+    next();
   } catch (error) {
     console.error(error);
     return res.status(400).json({ message: "Token inválido o expirado" });
