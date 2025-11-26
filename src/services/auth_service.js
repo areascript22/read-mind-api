@@ -22,3 +22,14 @@ export const generateEmailtoken = (user) => {
     { expiresIn: "1h" }
   );
 };
+
+export const generatePasswordResetToken = (email) => {
+  const JWT_Password_RESET_SECRET = process.env.JWT_Password_RESET_SECRET;
+  return jwt.sign(
+    {
+      email: email,
+    },
+    JWT_Password_RESET_SECRET,
+    { expiresIn: "1h" }
+  );
+};

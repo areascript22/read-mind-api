@@ -3,10 +3,21 @@ import {
   hashPassword,
 } from "../services/password_service.js";
 import { PrismaClient } from "@prisma/client";
-import { generateEmailtoken, generateToken } from "../services/auth_service.js";
+import {
+  generateEmailtoken,
+  generatePasswordResetToken,
+  generateToken,
+} from "../services/auth_service.js";
 import { isValidEspochEmail } from "../services/validators_servide.js";
 import Roles from "../models/roles.js";
 import { sendEmail } from "../services/email_service.js";
+
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 
@@ -87,7 +98,7 @@ export const signUp = async (req, res) => {
 
     // Email verification
     const verificationToken = generateEmailtoken(result);
-    const verificationLink = `http://localhost:3000/api/auth/verify_email?token=${verificationToken}`;
+    const verificationLink = `${process.env.BASE_URL}/api/auth/verify_email?token=${verificationToken}`;
 
     await sendEmail(
       result.email,
@@ -260,9 +271,84 @@ export const renewUser = async (req, res = response) => {
   }
 };
 
-export const sendVerificationEmail = async (req, res) => {
+export const forgotPassowrd = async (req, res) => {
   try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        message: "Email is required",
+      });
+    }
+
+    const user = await prisma.user.findFirst({ where: { email } });
+    if (!user) {
+      return res.json({ ok: true });
+    }
+    const token = generatePasswordResetToken(email);
+    const resetLink = `${process.env.BASE_URL}/api/auth/password/check_reset?token=${token}`;
+    await sendEmail(
+      email,
+      "Restablecer contraseña",
+      `
+        Haz click aquí para restablecer tu contraseña:
+        ${resetLink}
+    `
+    );
+
+    res.status(200).json({
+      ok: true,
+      token: token,
+      user: user,
+      link: resetLink,
+      message: "Enlace de recuperación de contraseña enviado",
+    });
   } catch (error) {
-    console.log("Error sending verification email: ", error);
+    console.log("Error sending password recovery link: ", error);
+    res.status(500).json({
+      message: "Error sending password recovery link",
+    });
+  }
+};
+
+export const checkRestPasswordToken = async (req, res) => {
+  try {
+    // 1️⃣ Leer el HTML
+    let html = fs.readFileSync(
+      path.join(__dirname, "../html/reset_password_form.html"),
+      "utf8"
+    );
+
+    // 2️⃣ Insertar BASE_URL del .env
+    html = html.replace("__API_URL__", process.env.BASE_URL);
+
+    // 3️⃣ Enviar HTML modificado
+    res.send(html);
+  } catch (err) {
+    console.error(err);
+    res.sendFile(path.join(__dirname, "../html/reset_error.html"));
+  }
+};
+
+export const setNewPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    console.log(`Setting new password for email: ${req.email},   ${password}`);
+    const hashedPassword = await hashPassword(password);
+    console.log(`Hashed password: ${hashedPassword}`);
+    const updatedUser = await prisma.user.update({
+      where: { email: req.email },
+      data: { passwordHash: hashedPassword },
+    });
+
+    res.status(200).json({
+      ok: true,
+      user: updatedUser,
+      message: "Contraseña actualizada exitosamente",
+    });
+  } catch (error) {
+    console.log("Error setting new password: ", error);
+    res.status(500).json({
+      message: "Error setting new password",
+    });
   }
 };
