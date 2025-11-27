@@ -164,12 +164,11 @@ Use exactly this format:
 
 export const getAllTranslations = async (req, res) => {
   try {
-    const userId = req.id; // El ID del usuario autenticado
+    const userId = req.id;
     if (!userId) {
       return res.status(401).json({ message: "Usuario no autenticado" });
     }
 
-    // Obtener todas las traducciones del usuario con su relación a la tabla Translation
     const userTranslations = await prisma.userTranslation.findMany({
       where: { userId },
       include: {
@@ -188,7 +187,6 @@ export const getAllTranslations = async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
-    // Formatear respuesta
     const translations = userTranslations.map((ut) => ({
       id: ut.translation.id,
       sourceText: ut.translation.sourceText,

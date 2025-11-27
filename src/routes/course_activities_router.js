@@ -9,11 +9,15 @@ import {
   deleteActivity,
   getAllActivities,
   updateAIReading,
-} from "../controllers/course_activities_controller.js";
+} from "../controllers/activities/course_activities_controller.js";
+import { createFlashCards } from "../controllers/activities/activity_flashcards.js";
 
 const router = express.Router();
 
 router.post("/:idCourse/aiReading", validateJwt, createAIReading);
+router.post("/:idCourse/flashcards", validateJwt, createFlashCards);
+
+
 router.post("/aiReading/attempt", validateJwt, createAIReadingAttempt);
 router.post("/paraphrase/attempt", validateJwt, createParaphraseAttempt);
 router.post("/mainIdea/attempt", validateJwt, createMainIdeaAttempt);

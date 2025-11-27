@@ -106,6 +106,7 @@ export const getAllActivities = async (req, res) => {
       where: { courseId },
       include: {
         aiReading: true,
+        flashCardActivity: true, // ← AGREGADO
       },
     });
 
@@ -122,8 +123,16 @@ export const getAllActivities = async (req, res) => {
           complexity: activity.aiReading.complexity,
           style: activity.aiReading.style,
         };
+      } else if (activity.flashCardActivity) {
+        // ← NUEVO BLOQUE
+        type = "FlashCard";
+        details = {
+          flashCardActivityId: activity.flashCardActivity.id,
+          maxCards: activity.flashCardActivity.maxCards,
+          cardOrder: activity.flashCardActivity.cardOrder,
+        };
       }
-      // futuro:
+      // Futuro:
       // else if (activity.essay) {
       //   type = "Essay";
       //   details = activity.essay;
@@ -134,14 +143,16 @@ export const getAllActivities = async (req, res) => {
 
       return {
         id: activity.id,
-
+        courseId: activity.courseId, // ← ÚTIL AGREGAR
         title: activity.title,
         description: activity.description,
         dueDate: activity.dueDate,
+        hasScoring: activity.hasScoring, // ← IMPORTANTE
+        maxScore: activity.maxScore, // ← IMPORTANTE
         createdAt: activity.createdAt,
         updatedAt: activity.updatedAt,
-        type,
-        ...details,
+        type, // "AIReading" o "FlashCard"
+        ...details, // Campos específicos del tipo
       };
     });
 
