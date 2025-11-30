@@ -64,7 +64,7 @@ export const createActivityProgress = async (req, res) => {
     }
 
     // Verificar si ya existe un progress para esta actividad y estudiante
-    const existingProgress = await prisma.activityProgress.findUnique({
+    const existingProgress = await prisma.aIReadingSession.findUnique({
       where: {
         studentId_aiReadingId: {
           studentId: studentId,
@@ -114,7 +114,7 @@ export const createActivityProgress = async (req, res) => {
     }
 
     // CREAR nuevo registro de progreso (solo si no existe)
-    const activityProgress = await prisma.activityProgress.create({
+    const activityProgress = await prisma.aIReadingSession.create({
       data: {
         studentId: studentId,
         aiReadingId: aiReadingId,
@@ -189,6 +189,7 @@ export const updateActivityProgress = async (req, res) => {
     mainIdeaCompleted,
     summaryCompleted,
   } = req.body;
+  console.log("Request body for update 1 :", req.body);
 
   // Validar que al menos un campo venga para actualizar
   if (
@@ -205,7 +206,7 @@ export const updateActivityProgress = async (req, res) => {
       message: "At least one field is required for update",
     });
   }
-
+  console.log("Request body for update 2 :");
   try {
     const aiReading = await prisma.aIReading.findUnique({
       where: { id: aiReadingId },
@@ -217,6 +218,7 @@ export const updateActivityProgress = async (req, res) => {
         message: "Reading Activity not found",
       });
     }
+    console.log("Request body for update 3 :");
 
     // Verificar que la actividad existe y obtener el courseId
     const activity = await prisma.activity.findUnique({
@@ -225,6 +227,7 @@ export const updateActivityProgress = async (req, res) => {
         course: true,
       },
     });
+    console.log("Request body for update 4 :");
 
     // Verificar que el usuario esté matriculado en el curso
     const isEnrolled = await prisma.courseStudent.findFirst({
@@ -234,6 +237,8 @@ export const updateActivityProgress = async (req, res) => {
       },
     });
 
+    console.log("Request body for update 5 :");
+
     if (!isEnrolled) {
       return res.status(403).json({
         ok: false,
@@ -241,8 +246,9 @@ export const updateActivityProgress = async (req, res) => {
       });
     }
 
+    console.log("Request body for update 6 :");
     // Verificar que el progress exista antes de actualizar
-    const existingProgress = await prisma.activityProgress.findUnique({
+    const existingProgress = await prisma.aIReadingSession.findUnique({
       where: {
         studentId_aiReadingId: {
           studentId: studentId,
@@ -250,13 +256,15 @@ export const updateActivityProgress = async (req, res) => {
         },
       },
     });
-
+    console.log(`Request body for update 7 : ${existingProgress.id}`);
     if (!existingProgress) {
       return res.status(404).json({
         ok: false,
         message: "Activity progress not found. Please create it first.",
       });
     }
+
+    console.log(`Request body for update 7.1 : ${existingProgress.id}`);
 
     // Preparar datos para actualizar (solo los campos que vinieron)
     const updateData = {};
@@ -271,9 +279,10 @@ export const updateActivityProgress = async (req, res) => {
       updateData.mainIdeaCompleted = mainIdeaCompleted;
     if (summaryCompleted !== undefined)
       updateData.summaryCompleted = summaryCompleted;
+    console.log(`Request body for update 7.2 : ${existingProgress.id}`);
 
     // ACTUALIZAR registro existente con include para obtener datos relacionados
-    const activityProgress = await prisma.activityProgress.update({
+    const activityProgress = await prisma.aIReadingSession.update({
       where: {
         studentId_aiReadingId: {
           studentId: studentId,
@@ -283,6 +292,7 @@ export const updateActivityProgress = async (req, res) => {
       data: updateData,
     });
 
+    console.log(`Request body for update 8 : ${activityProgress}`);
     // Formatear la respuesta según la estructura requerida
     const formattedProgress = {
       progressId: activityProgress.id,
@@ -316,6 +326,7 @@ export const updateActivityProgress = async (req, res) => {
       ),
     };
 
+    console.log("Request body for update 9 :");
     return res.status(200).json({
       ok: true,
       message: "Activity progress updated successfully",
@@ -350,7 +361,7 @@ export const getAllActivityProgresses = async (req, res) => {
 
     // Obtener todos los progress del usuario con información anidada:
     // activityProgress -> aiReading -> activity -> course
-    const activityProgresses = await prisma.activityProgress.findMany({
+    const activityProgresses = await prisma.aIReadingSession.findMany({
       where: {
         studentId: userId,
       },

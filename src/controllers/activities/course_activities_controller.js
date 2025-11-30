@@ -69,6 +69,7 @@ export const createAIReading = async (req, res) => {
     const { activity, aiReading } = result;
 
     const responseBody = {
+      type: "aIReading",
       id: activity.id,
       title: activity.title,
       description: activity.description,
@@ -81,6 +82,7 @@ export const createAIReading = async (req, res) => {
       style: aiReading.style,
       createdAt: activity.createdAt,
       updatedAt: activity.updatedAt,
+      aiReadingId: aiReading.id,
     };
 
     return res.status(201).json({
@@ -115,7 +117,7 @@ export const getAllActivities = async (req, res) => {
       let details = null;
 
       if (activity.aiReading) {
-        type = "AIReading";
+        type = "aIReading";
         details = {
           aiReadingId: activity.aiReading.id,
           content: activity.aiReading.content,
@@ -125,7 +127,7 @@ export const getAllActivities = async (req, res) => {
         };
       } else if (activity.flashCardActivity) {
         // ← NUEVO BLOQUE
-        type = "FlashCard";
+        type = "flashCard";
         details = {
           flashCardActivityId: activity.flashCardActivity.id,
           maxCards: activity.flashCardActivity.maxCards,

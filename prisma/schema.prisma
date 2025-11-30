@@ -32,7 +32,7 @@ model User {
   roleRequests        RoleRequest[]
   coursesTaught       Course[]           @relation("TeacherCourses")
   enrolledCourses     CourseStudent[]
-  activityCompletions ActivityProgress[]
+  activityCompletions AIReadingSession[]
 
   paraphraseAttempts ParaphraseAttempt[]
   mainIdeaAttempts   MainIdeaAttempt[]
@@ -187,10 +187,10 @@ model AIReading {
   mainIdeaAttempts   MainIdeaAttempt[]
   summaryAttempts    SummaryAttempt[]
   audioEvents        AIReadingAttempt[]
-  completions        ActivityProgress[]
+  completions        AIReadingSession[]
 }
 
-model ActivityProgress {
+model AIReadingSession {
   id          Int     @id @default(autoincrement())
   studentId   Int
   aiReadingId Int

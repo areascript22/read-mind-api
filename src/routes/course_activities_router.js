@@ -10,12 +10,24 @@ import {
   getAllActivities,
   updateAIReading,
 } from "../controllers/activities/course_activities_controller.js";
-import { createFlashCards } from "../controllers/activities/activity_flashcards.js";
+import {
+  completeFlashCardSession,
+  createFlashCardAttempt,
+  createFlashCards,
+  startFlashCardSession,
+} from "../controllers/activities/activity_flashcards.js";
 
 const router = express.Router();
 
 router.post("/:idCourse/aiReading", validateJwt, createAIReading);
 router.post("/:idCourse/flashcards", validateJwt, createFlashCards);
+router.post(
+  "/:activityId/flashcard/session",
+  validateJwt,
+  startFlashCardSession
+);
+router.put("/flashcard/:sessionId/complete", validateJwt, completeFlashCardSession);
+router.post("/flashcard/:sessionId/attempt", validateJwt, createFlashCardAttempt);
 
 
 router.post("/aiReading/attempt", validateJwt, createAIReadingAttempt);
