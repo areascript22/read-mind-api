@@ -204,6 +204,8 @@ model AIReadingSession {
   mainIdeaCompleted   Boolean @default(false)
   summaryCompleted    Boolean @default(false)
 
+  completedAt DateTime?
+
   student   User      @relation(fields: [studentId], references: [id])
   aiReading AIReading @relation(fields: [aiReadingId], references: [id])
 
@@ -221,6 +223,8 @@ model ParaphraseAttempt {
   fluencyScore     Int
   originalityScore Int
   feedback         String?  @db.Text
+  averageScore     Float
+  timeSpentSec     Int
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -239,6 +243,8 @@ model MainIdeaAttempt {
   clarityScore     Int
   concisenessScore Int
   feedback         String?  @db.Text
+  averageScore     Float
+  timeSpentSec     Int
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -257,6 +263,8 @@ model SummaryAttempt {
   coverageScore Int
   clarityScore  Int
   feedback      String?  @db.Text
+  averageScore  Float
+  timeSpentSec  Int
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

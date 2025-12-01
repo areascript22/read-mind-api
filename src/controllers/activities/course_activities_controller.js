@@ -243,6 +243,8 @@ export const updateAIReading = async (req, res) => {
   }
 };
 
+//Attempts
+
 export const createParaphraseAttempt = async (req, res) => {
   try {
     const {
@@ -251,6 +253,7 @@ export const createParaphraseAttempt = async (req, res) => {
       fluencyScore,
       originalityScore,
       feedback,
+      timeSpentSec,
     } = req.body;
     const userId = req.id;
 
@@ -258,10 +261,16 @@ export const createParaphraseAttempt = async (req, res) => {
       !aiReadingId ||
       similarityScore == null ||
       fluencyScore == null ||
-      originalityScore == null
+      originalityScore == null ||
+      timeSpentSec == null
     ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
+
+    // Calcular el averageScore redondeado a 2 decimales
+    const averageScore = Number(
+      ((similarityScore + fluencyScore + originalityScore) / 3).toFixed(2)
+    );
 
     const attempt = await prisma.paraphraseAttempt.create({
       data: {
@@ -271,6 +280,8 @@ export const createParaphraseAttempt = async (req, res) => {
         fluencyScore,
         originalityScore,
         feedback,
+        timeSpentSec,
+        averageScore,
       },
     });
 
@@ -285,7 +296,6 @@ export const createParaphraseAttempt = async (req, res) => {
       .json({ message: "Failed to create paraphrase attempt." });
   }
 };
-
 export const createMainIdeaAttempt = async (req, res) => {
   try {
     const {
@@ -294,6 +304,7 @@ export const createMainIdeaAttempt = async (req, res) => {
       clarityScore,
       concisenessScore,
       feedback,
+      timeSpentSec,
     } = req.body;
     const userId = req.id;
 
@@ -301,10 +312,16 @@ export const createMainIdeaAttempt = async (req, res) => {
       !aiReadingId ||
       accuracyScore == null ||
       clarityScore == null ||
-      concisenessScore == null
+      concisenessScore == null ||
+      timeSpentSec == null
     ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
+
+    // Calcular el averageScore redondeado a 2 decimales
+    const averageScore = Number(
+      ((accuracyScore + clarityScore + concisenessScore) / 3).toFixed(2)
+    );
 
     const attempt = await prisma.mainIdeaAttempt.create({
       data: {
@@ -314,6 +331,8 @@ export const createMainIdeaAttempt = async (req, res) => {
         clarityScore,
         concisenessScore,
         feedback,
+        timeSpentSec,
+        averageScore,
       },
     });
 
@@ -337,6 +356,7 @@ export const createSummaryAttempt = async (req, res) => {
       coverageScore,
       clarityScore,
       feedback,
+      timeSpentSec,
     } = req.body;
     const userId = req.id;
 
@@ -344,10 +364,15 @@ export const createSummaryAttempt = async (req, res) => {
       !aiReadingId ||
       accuracyScore == null ||
       coverageScore == null ||
-      clarityScore == null
+      clarityScore == null ||
+      timeSpentSec == null
     ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
+
+    const averageScore = Number(
+      ((accuracyScore + coverageScore + clarityScore) / 3).toFixed(2)
+    );
 
     const attempt = await prisma.summaryAttempt.create({
       data: {
@@ -357,6 +382,8 @@ export const createSummaryAttempt = async (req, res) => {
         coverageScore,
         clarityScore,
         feedback,
+        timeSpentSec,
+        averageScore,
       },
     });
 

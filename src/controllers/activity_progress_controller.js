@@ -5,31 +5,14 @@ export const createActivityProgress = async (req, res) => {
   const aiReadingId = parseInt(req.params.aiReadingId);
   const studentId = req.id;
 
-  const {
-    completed,
-    totalProgress,
-    totalScore,
-    readingCompleted,
-    paraphraseCompleted,
-    mainIdeaCompleted,
-    summaryCompleted,
-  } = req.body;
-
-  // Validar datos requeridos para creación
-  if (
-    completed === undefined ||
-    totalProgress === undefined ||
-    totalScore === undefined
-  ) {
+  if (!aiReadingId) {
     return res.status(400).json({
       ok: false,
-      message:
-        "completed, totalProgress, and totalScore are required for creation",
+      message: "Reading identifier is required",
     });
   }
 
   try {
-    // Verificar que la actividad existe y obtener el courseId
     const aiReading = await prisma.aIReading.findUnique({
       where: { id: aiReadingId },
     });
@@ -48,7 +31,6 @@ export const createActivityProgress = async (req, res) => {
       },
     });
 
-    // Verificar que el usuario esté matriculado en el curso
     const isEnrolled = await prisma.courseStudent.findFirst({
       where: {
         studentId: studentId,
@@ -63,7 +45,6 @@ export const createActivityProgress = async (req, res) => {
       });
     }
 
-    // Verificar si ya existe un progress para esta actividad y estudiante
     const existingProgress = await prisma.aIReadingSession.findUnique({
       where: {
         studentId_aiReadingId: {
@@ -113,22 +94,20 @@ export const createActivityProgress = async (req, res) => {
       });
     }
 
-    // CREAR nuevo registro de progreso (solo si no existe)
     const activityProgress = await prisma.aIReadingSession.create({
       data: {
         studentId: studentId,
         aiReadingId: aiReadingId,
-        completed: completed,
-        totalProgress: totalProgress,
-        totalScore: totalScore,
-        readingCompleted: readingCompleted || false,
-        paraphraseCompleted: paraphraseCompleted || false,
-        mainIdeaCompleted: mainIdeaCompleted || false,
-        summaryCompleted: summaryCompleted || false,
+        completed: false,
+        totalProgress: 0,
+        totalScore: 0,
+        readingCompleted: false,
+        paraphraseCompleted: false,
+        mainIdeaCompleted: false,
+        summaryCompleted: false,
       },
     });
 
-    // Formatear la respuesta según la estructura requerida
     const formattedProgress = {
       progressId: activityProgress.id,
       activityId: activity.id,
@@ -181,32 +160,9 @@ export const updateActivityProgress = async (req, res) => {
   const studentId = req.id;
 
   const {
-    completed,
-    totalProgress,
-    totalScore,
-    readingCompleted,
-    paraphraseCompleted,
-    mainIdeaCompleted,
-    summaryCompleted,
+    readingCompleted, // Este campo es opcional
   } = req.body;
-  console.log("Request body for update 1 :", req.body);
 
-  // Validar que al menos un campo venga para actualizar
-  if (
-    completed === undefined &&
-    totalProgress === undefined &&
-    totalScore === undefined &&
-    readingCompleted === undefined &&
-    paraphraseCompleted === undefined &&
-    mainIdeaCompleted === undefined &&
-    summaryCompleted === undefined
-  ) {
-    return res.status(400).json({
-      ok: false,
-      message: "At least one field is required for update",
-    });
-  }
-  console.log("Request body for update 2 :");
   try {
     const aiReading = await prisma.aIReading.findUnique({
       where: { id: aiReadingId },
@@ -218,7 +174,6 @@ export const updateActivityProgress = async (req, res) => {
         message: "Reading Activity not found",
       });
     }
-    console.log("Request body for update 3 :");
 
     // Verificar que la actividad existe y obtener el courseId
     const activity = await prisma.activity.findUnique({
@@ -227,7 +182,6 @@ export const updateActivityProgress = async (req, res) => {
         course: true,
       },
     });
-    console.log("Request body for update 4 :");
 
     // Verificar que el usuario esté matriculado en el curso
     const isEnrolled = await prisma.courseStudent.findFirst({
@@ -237,8 +191,6 @@ export const updateActivityProgress = async (req, res) => {
       },
     });
 
-    console.log("Request body for update 5 :");
-
     if (!isEnrolled) {
       return res.status(403).json({
         ok: false,
@@ -246,8 +198,6 @@ export const updateActivityProgress = async (req, res) => {
       });
     }
 
-    console.log("Request body for update 6 :");
-    // Verificar que el progress exista antes de actualizar
     const existingProgress = await prisma.aIReadingSession.findUnique({
       where: {
         studentId_aiReadingId: {
@@ -256,7 +206,7 @@ export const updateActivityProgress = async (req, res) => {
         },
       },
     });
-    console.log(`Request body for update 7 : ${existingProgress.id}`);
+
     if (!existingProgress) {
       return res.status(404).json({
         ok: false,
@@ -264,24 +214,105 @@ export const updateActivityProgress = async (req, res) => {
       });
     }
 
-    console.log(`Request body for update 7.1 : ${existingProgress.id}`);
+    // Consultar los attempts con el MAYOR averageScore de cada tipo
+    const [bestParaphrase, bestMainIdea, bestSummary] = await Promise.all([
+      prisma.paraphraseAttempt.findFirst({
+        where: {
+          aiReadingId: aiReadingId,
+          userId: studentId,
+        },
+        orderBy: {
+          averageScore: "desc",
+        },
+      }),
+      prisma.mainIdeaAttempt.findFirst({
+        where: {
+          aiReadingId: aiReadingId,
+          userId: studentId,
+        },
+        orderBy: {
+          averageScore: "desc",
+        },
+      }),
+      prisma.summaryAttempt.findFirst({
+        where: {
+          aiReadingId: aiReadingId,
+          userId: studentId,
+        },
+        orderBy: {
+          averageScore: "desc",
+        },
+      }),
+    ]);
 
-    // Preparar datos para actualizar (solo los campos que vinieron)
-    const updateData = {};
-    if (completed !== undefined) updateData.completed = completed;
-    if (totalProgress !== undefined) updateData.totalProgress = totalProgress;
-    if (totalScore !== undefined) updateData.totalScore = totalScore;
-    if (readingCompleted !== undefined)
+    // Determinar valores automáticos basados en la existencia de attempts
+    const autoParaphraseCompleted = !!bestParaphrase;
+    const autoMainIdeaCompleted = !!bestMainIdea;
+    const autoSummaryCompleted = !!bestSummary;
+
+    // 1. readingCompleted: si viene en el body usamos ese valor, si no viene mantenemos el existente
+    const finalReadingCompleted =
+      readingCompleted !== undefined
+        ? readingCompleted
+        : existingProgress.readingCompleted;
+
+    // Determinar si todas las actividades están completas
+    const allCompleted =
+      finalReadingCompleted &&
+      autoParaphraseCompleted &&
+      autoMainIdeaCompleted &&
+      autoSummaryCompleted;
+
+    // Calcular totalProgress automáticamente (25 por cada actividad completada)
+    const completedActivitiesCount = [
+      finalReadingCompleted,
+      autoParaphraseCompleted,
+      autoMainIdeaCompleted,
+      autoSummaryCompleted,
+    ].filter(Boolean).length;
+
+    const autoTotalProgress = completedActivitiesCount * 25;
+
+    // Calcular totalScore automáticamente (promedio de los MEJORES averageScore)
+    let autoTotalScore = 0;
+
+    // Recopilar los mejores scores de cada tipo
+    const bestScores = [];
+    if (bestParaphrase) bestScores.push(bestParaphrase.averageScore);
+    if (bestMainIdea) bestScores.push(bestMainIdea.averageScore);
+    if (bestSummary) bestScores.push(bestSummary.averageScore);
+
+    if (bestScores.length > 0) {
+      const sum = bestScores.reduce((acc, score) => acc + score, 0);
+      autoTotalScore = Number((sum / bestScores.length).toFixed(2));
+    }
+
+    // Preparar datos para actualizar
+    const updateData = {
+      paraphraseCompleted: autoParaphraseCompleted,
+      mainIdeaCompleted: autoMainIdeaCompleted,
+      summaryCompleted: autoSummaryCompleted,
+      totalProgress: autoTotalProgress,
+      totalScore:
+        bestScores.length > 0 ? autoTotalScore : existingProgress.totalScore,
+    };
+
+    // Solo actualizar readingCompleted si viene en el body
+    if (readingCompleted !== undefined) {
       updateData.readingCompleted = readingCompleted;
-    if (paraphraseCompleted !== undefined)
-      updateData.paraphraseCompleted = paraphraseCompleted;
-    if (mainIdeaCompleted !== undefined)
-      updateData.mainIdeaCompleted = mainIdeaCompleted;
-    if (summaryCompleted !== undefined)
-      updateData.summaryCompleted = summaryCompleted;
-    console.log(`Request body for update 7.2 : ${existingProgress.id}`);
+    }
 
-    // ACTUALIZAR registro existente con include para obtener datos relacionados
+    // Si todas están completas, marcar como completed y establecer completedAt
+    if (allCompleted) {
+      updateData.completed = true;
+      updateData.completedAt = new Date();
+    } else {
+      // Si no están todas completas, asegurarse que completed sea false
+      updateData.completed = false;
+      updateData.completedAt = null;
+    }
+
+    // Actualizar registro existente
     const activityProgress = await prisma.aIReadingSession.update({
       where: {
         studentId_aiReadingId: {
@@ -292,8 +323,7 @@ export const updateActivityProgress = async (req, res) => {
       data: updateData,
     });
 
-    console.log(`Request body for update 8 : ${activityProgress}`);
-    // Formatear la respuesta según la estructura requerida
+    // Formatear la respuesta
     const formattedProgress = {
       progressId: activityProgress.id,
       activityId: activity.id,
@@ -308,6 +338,7 @@ export const updateActivityProgress = async (req, res) => {
       maxScore: activity.maxScore,
       dueDate: activity.dueDate,
       updatedAt: activityProgress.updatedAt,
+      completedAt: activityProgress.completedAt,
       subactivitiesCompleted: {
         reading: activityProgress.readingCompleted,
         paraphrase: activityProgress.paraphraseCompleted,
@@ -326,7 +357,6 @@ export const updateActivityProgress = async (req, res) => {
       ),
     };
 
-    console.log("Request body for update 9 :");
     return res.status(200).json({
       ok: true,
       message: "Activity progress updated successfully",
