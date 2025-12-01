@@ -69,6 +69,7 @@ export const createAIReading = async (req, res) => {
     const { activity, aiReading } = result;
 
     const responseBody = {
+      type: "aIReading",
       id: activity.id,
       title: activity.title,
       description: activity.description,
@@ -81,6 +82,7 @@ export const createAIReading = async (req, res) => {
       style: aiReading.style,
       createdAt: activity.createdAt,
       updatedAt: activity.updatedAt,
+      aiReadingId: aiReading.id,
     };
 
     return res.status(201).json({
@@ -106,6 +108,7 @@ export const getAllActivities = async (req, res) => {
       where: { courseId },
       include: {
         aiReading: true,
+        flashCardActivity: true, // ← AGREGADO
       },
     });
 
@@ -114,7 +117,7 @@ export const getAllActivities = async (req, res) => {
       let details = null;
 
       if (activity.aiReading) {
-        type = "AIReading";
+        type = "aIReading";
         details = {
           aiReadingId: activity.aiReading.id,
           content: activity.aiReading.content,
@@ -122,8 +125,16 @@ export const getAllActivities = async (req, res) => {
           complexity: activity.aiReading.complexity,
           style: activity.aiReading.style,
         };
+      } else if (activity.flashCardActivity) {
+        // ← NUEVO BLOQUE
+        type = "flashCard";
+        details = {
+          flashCardActivityId: activity.flashCardActivity.id,
+          maxCards: activity.flashCardActivity.maxCards,
+          cardOrder: activity.flashCardActivity.cardOrder,
+        };
       }
-      // futuro:
+      // Futuro:
       // else if (activity.essay) {
       //   type = "Essay";
       //   details = activity.essay;
@@ -134,14 +145,16 @@ export const getAllActivities = async (req, res) => {
 
       return {
         id: activity.id,
-
+        courseId: activity.courseId, // ← ÚTIL AGREGAR
         title: activity.title,
         description: activity.description,
         dueDate: activity.dueDate,
+        hasScoring: activity.hasScoring, // ← IMPORTANTE
+        maxScore: activity.maxScore, // ← IMPORTANTE
         createdAt: activity.createdAt,
         updatedAt: activity.updatedAt,
-        type,
-        ...details,
+        type, // "AIReading" o "FlashCard"
+        ...details, // Campos específicos del tipo
       };
     });
 
@@ -230,6 +243,8 @@ export const updateAIReading = async (req, res) => {
   }
 };
 
+//Attempts
+
 export const createParaphraseAttempt = async (req, res) => {
   try {
     const {
@@ -238,6 +253,7 @@ export const createParaphraseAttempt = async (req, res) => {
       fluencyScore,
       originalityScore,
       feedback,
+      timeSpentSec,
     } = req.body;
     const userId = req.id;
 
@@ -245,10 +261,16 @@ export const createParaphraseAttempt = async (req, res) => {
       !aiReadingId ||
       similarityScore == null ||
       fluencyScore == null ||
-      originalityScore == null
+      originalityScore == null ||
+      timeSpentSec == null
     ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
+
+    // Calcular el averageScore redondeado a 2 decimales
+    const averageScore = Number(
+      ((similarityScore + fluencyScore + originalityScore) / 3).toFixed(2)
+    );
 
     const attempt = await prisma.paraphraseAttempt.create({
       data: {
@@ -258,6 +280,8 @@ export const createParaphraseAttempt = async (req, res) => {
         fluencyScore,
         originalityScore,
         feedback,
+        timeSpentSec,
+        averageScore,
       },
     });
 
@@ -272,7 +296,6 @@ export const createParaphraseAttempt = async (req, res) => {
       .json({ message: "Failed to create paraphrase attempt." });
   }
 };
-
 export const createMainIdeaAttempt = async (req, res) => {
   try {
     const {
@@ -281,6 +304,7 @@ export const createMainIdeaAttempt = async (req, res) => {
       clarityScore,
       concisenessScore,
       feedback,
+      timeSpentSec,
     } = req.body;
     const userId = req.id;
 
@@ -288,10 +312,16 @@ export const createMainIdeaAttempt = async (req, res) => {
       !aiReadingId ||
       accuracyScore == null ||
       clarityScore == null ||
-      concisenessScore == null
+      concisenessScore == null ||
+      timeSpentSec == null
     ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
+
+    // Calcular el averageScore redondeado a 2 decimales
+    const averageScore = Number(
+      ((accuracyScore + clarityScore + concisenessScore) / 3).toFixed(2)
+    );
 
     const attempt = await prisma.mainIdeaAttempt.create({
       data: {
@@ -301,6 +331,8 @@ export const createMainIdeaAttempt = async (req, res) => {
         clarityScore,
         concisenessScore,
         feedback,
+        timeSpentSec,
+        averageScore,
       },
     });
 
@@ -324,6 +356,7 @@ export const createSummaryAttempt = async (req, res) => {
       coverageScore,
       clarityScore,
       feedback,
+      timeSpentSec,
     } = req.body;
     const userId = req.id;
 
@@ -331,10 +364,15 @@ export const createSummaryAttempt = async (req, res) => {
       !aiReadingId ||
       accuracyScore == null ||
       coverageScore == null ||
-      clarityScore == null
+      clarityScore == null ||
+      timeSpentSec == null
     ) {
       return res.status(400).json({ message: "Missing required fields." });
     }
+
+    const averageScore = Number(
+      ((accuracyScore + coverageScore + clarityScore) / 3).toFixed(2)
+    );
 
     const attempt = await prisma.summaryAttempt.create({
       data: {
@@ -344,6 +382,8 @@ export const createSummaryAttempt = async (req, res) => {
         coverageScore,
         clarityScore,
         feedback,
+        timeSpentSec,
+        averageScore,
       },
     });
 

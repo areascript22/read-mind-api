@@ -14,12 +14,6 @@ export const generateParagrapth = async (req, res) => {
       environment,
     } = req.body;
 
-    console.log("topic:", topic);
-    console.log("length:", length);
-    console.log("complexity:", complexity);
-    console.log("style:", style);
-    console.log("environment:", environment);
-
     if (environment === "dev") {
       return res.status(200).json({
         ok: true,
@@ -68,8 +62,10 @@ Use exactly this format:
   "similarity_score": number 0-100,
   "fluency_score": number 0-100,
   "originality_score": number 0-100,
-  "feedback": "Short constructive feedback (2-3 sentences)."
+  "feedback": "Breve retroalimentación constructiva en ESPAÑOL (2-3 oraciones)."
 }
+
+IMPORTANT: Write the feedback in SPANISH language.
 `;
 
     const analysis = await generateText(prompt);
@@ -117,7 +113,6 @@ Use exactly this format:
       .json({ ok: false, message: "Failed to evaluate paraphrase" });
   }
 };
-
 export const evaluateMainIdea = async (req, res) => {
   try {
     const { paragraph, userMainIdea } = req.body;
@@ -138,8 +133,10 @@ Use exactly this format:
   "accuracy_score": number 0-100,
   "clarity_score": number 0-100,
   "conciseness_score": number 0-100,
-  "feedback": "Short constructive feedback (2-3 sentences)."
+  "feedback": "Breve retroalimentación constructiva en ESPAÑOL (2-3 oraciones)."
 }
+
+IMPORTANT: Write the feedback in SPANISH language.
 `;
 
     const analysis = await generateText(prompt);
@@ -205,8 +202,10 @@ Use exactly this format:
   "accuracy_score": number 0-100,
   "coverage_score": number 0-100,
   "clarity_score": number 0-100,
-  "feedback": "Short constructive feedback (2-3 sentences)."
+  "feedback": "Breve retroalimentación constructiva en ESPAÑOL (2-3 oraciones)."
 }
+
+IMPORTANT: Write the feedback in SPANISH language.
 `;
 
     const analysis = await generateText(prompt);
