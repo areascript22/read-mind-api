@@ -32,7 +32,7 @@ model User {
   roleRequests        RoleRequest[]
   coursesTaught       Course[]           @relation("TeacherCourses")
   enrolledCourses     CourseStudent[]
-  activityCompletions ActivityProgress[]
+  activityCompletions AIReadingSession[]
 
   paraphraseAttempts ParaphraseAttempt[]
   mainIdeaAttempts   MainIdeaAttempt[]
@@ -41,18 +41,19 @@ model User {
   userTranslations   UserTranslation[]
   pushNotifications  PushNotification[]
 
-  preferences UserPreferences?
+  preferences       UserPreferences?
+  flashCardSessions FlashCardSession[]
 }
 
 model UserPreferences {
-  id                     Int      @id @default(autoincrement())
-  userId                 Int      @unique
-  seenNotificationDialog Boolean  @default(false)
+  id                     Int     @id @default(autoincrement())
+  userId                 Int     @unique
+  seenNotificationDialog Boolean @default(false)
 
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user                   User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 model RoleRequestStatus {
@@ -114,8 +115,61 @@ model Activity {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  aiReading AIReading?
+  course            Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  aiReading         AIReading?
+  flashCardActivity FlashCardActivity?
+}
+
+model FlashCardActivity {
+  id         Int      @id @default(autoincrement())
+  activityId Int      @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  maxCards  Int    @default(10) // Cuántas cards por sesión
+  cardOrder String @db.VarChar(20) // Random, Sequential
+
+  activity Activity           @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  sessions FlashCardSession[]
+}
+
+model FlashCardSession {
+  id                  Int       @id @default(autoincrement())
+  flashCardActivityId Int
+  studentId           Int
+  startedAt           DateTime  @default(now())
+  completedAt         DateTime?
+  totalTimeSec        Int       @default(0)
+
+  cardsCompleted   Int    @default(0) // Total de cards intentados
+  correctAnswers   Int    @default(0) // Aciertos totales
+  incorrectAnswers Int    @default(0) // Errores totales
+  confidenceScore  Float? // Promedio de confianza (1-5)
+
+  // Foreign keys
+  student           User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  flashCardActivity FlashCardActivity  @relation(fields: [flashCardActivityId], references: [id], onDelete: Cascade)
+  cardAttempts      FlashCardAttempt[]
+
+  @@unique([studentId, flashCardActivityId, startedAt])
+  @@index([studentId, completedAt]) // ← para consultas de progreso
+  @@index([flashCardActivityId, startedAt]) // ← para analytics del curso
+}
+
+model FlashCardAttempt {
+  id                Int @id @default(autoincrement())
+  sessionId         Int // Foreign key a FlashCardSession
+  userTranslationId Int // Foreign key a UserTranslation (card específico)
+
+  userAnswer      String           @db.VarChar(500) // Lo que escribió el usuario
+  isCorrect       Boolean // Si acertó o no
+  timeSpentSec    Int // Tiempo en esta card específica
+  createdAt       DateTime         @default(now())
+  session         FlashCardSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userTranslation UserTranslation  @relation(fields: [userTranslationId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@index([userTranslationId]) // ← para análisis por palabra
 }
 
 model AIReading {
@@ -133,10 +187,10 @@ model AIReading {
   mainIdeaAttempts   MainIdeaAttempt[]
   summaryAttempts    SummaryAttempt[]
   audioEvents        AIReadingAttempt[]
-  completions        ActivityProgress[]
+  completions        AIReadingSession[]
 }
 
-model ActivityProgress {
+model AIReadingSession {
   id          Int     @id @default(autoincrement())
   studentId   Int
   aiReadingId Int
@@ -149,6 +203,8 @@ model ActivityProgress {
   paraphraseCompleted Boolean @default(false)
   mainIdeaCompleted   Boolean @default(false)
   summaryCompleted    Boolean @default(false)
+
+  completedAt DateTime?
 
   student   User      @relation(fields: [studentId], references: [id])
   aiReading AIReading @relation(fields: [aiReadingId], references: [id])
@@ -167,6 +223,8 @@ model ParaphraseAttempt {
   fluencyScore     Int
   originalityScore Int
   feedback         String?  @db.Text
+  averageScore     Float
+  timeSpentSec     Int
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -185,6 +243,8 @@ model MainIdeaAttempt {
   clarityScore     Int
   concisenessScore Int
   feedback         String?  @db.Text
+  averageScore     Float
+  timeSpentSec     Int
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -203,6 +263,8 @@ model SummaryAttempt {
   coverageScore Int
   clarityScore  Int
   feedback      String?  @db.Text
+  averageScore  Float
+  timeSpentSec  Int
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -254,8 +316,9 @@ model UserTranslation {
   translationId Int
   createdAt     DateTime @default(now())
 
-  user        User        @relation(fields: [userId], references: [id])
-  translation Translation @relation(fields: [translationId], references: [id])
+  user              User               @relation(fields: [userId], references: [id])
+  translation       Translation        @relation(fields: [translationId], references: [id])
+  flashCardAttempts FlashCardAttempt[]
 
   @@unique([userId, translationId])
 }

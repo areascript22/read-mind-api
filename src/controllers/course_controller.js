@@ -91,6 +91,14 @@ export const createNewCourse = async (req, res) => {
         inviteCode,
       },
     });
+
+    await prisma.courseStudent.create({
+      data: {
+        course: { connect: { id: newCourse.id } },
+        student: { connect: { id: professorId } },
+      },
+    });
+
     res.status(201).json({
       ok: true,
       course: newCourse,
