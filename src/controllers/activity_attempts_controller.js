@@ -169,3 +169,103 @@ export const getSummaryAttempts = async (req, res) => {
       .json({ message: "Failed to retrieve summary attempts." });
   }
 };
+
+export const getFlashcardsSessions = async (req, res) => {
+  const flashcardActId = parseInt(req.params.flashcardActId);
+  const { targetUserId } = req.query;
+
+  console.log(
+    `Fetching flashcard sessions for flashcardActId=${flashcardActId} and targetUserId=${targetUserId}`
+  );
+
+  try {
+    // Validar flashcardActId
+    if (!flashcardActId || isNaN(flashcardActId)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Valid flashcardActId is required in URL parameters",
+      });
+    }
+
+    // Validar targetUserId
+    if (!targetUserId) {
+      return res.status(400).json({
+        ok: false,
+        message: "targetUserId is required in query parameters",
+      });
+    }
+
+    const userId = parseInt(targetUserId);
+    if (isNaN(userId)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid targetUserId format",
+      });
+    }
+
+    // Verificar que la actividad exista
+    const flashcardActivity = await prisma.flashCardActivity.findUnique({
+      where: { id: flashcardActId },
+      select: { id: true },
+    });
+
+    if (!flashcardActivity) {
+      return res.status(404).json({
+        ok: false,
+        message: "Flashcard activity not found",
+      });
+    }
+
+    // Verificar que el usuario exista
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        ok: false,
+        message: "User not found",
+      });
+    }
+
+    // Obtener todas las sesiones que cumplan con los filtros
+    const sessions = await prisma.flashCardSession.findMany({
+      where: {
+        flashCardActivityId: flashcardActId,
+        studentId: userId,
+      },
+      orderBy: {
+        completedAt: "asc",
+      },
+    });
+
+    return res.status(200).json({
+      ok: true,
+      message: "Flashcard sessions retrieved successfully",
+      data: {
+        sessions: sessions.map((session) => ({
+          id: session.id,
+          flashCardActivityId: session.flashCardActivityId,
+          studentId: session.studentId,
+          startedAt: session.startedAt.toISOString(),
+          completedAt: session.completedAt
+            ? session.completedAt.toISOString()
+            : null,
+          totalTimeSec: session.totalTimeSec,
+          cardsCompleted: session.cardsCompleted,
+          correctAnswers: session.correctAnswers,
+          incorrectAnswers: session.incorrectAnswers,
+          score: session.score,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error("Error retrieving flashcard sessions:", error);
+    return res.status(500).json({
+      ok: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
