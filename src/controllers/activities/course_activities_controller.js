@@ -401,31 +401,28 @@ export const createSummaryAttempt = async (req, res) => {
 
 export const createAIReadingAttempt = async (req, res) => {
   try {
-    const {
-      aiReadingId,
-      timeSinceEnterSec,
-      timeSinceNextActivitySec,
-      playCount,
-    } = req.body;
+    const { aiReadingId, timeSpentSec, playCount } = req.body;
     const userId = req.id;
 
-    if (!aiReadingId) {
+    console.log(
+      `Received AI Reading Attempt: aiReadingId=${aiReadingId}, timeSpentSec=${timeSpentSec}, playCount=${playCount}, userId=${userId}`
+    );
+    if (aiReadingId == null || !timeSpentSec == null || !playCount == null) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
-    const event = await prisma.aIReadingAttempt.create({
+    const readingAttempt = await prisma.aIReadingAttempt.create({
       data: {
-        aiReadingId,
-        userId,
-        timeSinceEnterSec: timeSinceEnterSec || 0,
-        timeSinceNextActivitySec: timeSinceNextActivitySec || 0,
-        playCount: playCount || 0,
+        aiReadingId: aiReadingId,
+        userId: userId,
+        timeSpentSec: timeSpentSec,
+        playCount: playCount,
       },
     });
 
     return res.status(201).json({
-      message: "AI reading audio event created successfully.",
-      data: event,
+      message: "AI reading attempt created successfully.",
+      data: readingAttempt,
     });
   } catch (error) {
     console.error(error);
