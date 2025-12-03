@@ -4,6 +4,7 @@ import {
   forgotPassowrd,
   renewToken,
   renewUser,
+  resendVerificationEmailLink,
   setNewPassword,
   signIn,
   signUp,
@@ -27,6 +28,7 @@ router.get(
 );
 router.post("/password/forgot", forgotPassowrd);
 router.post("/password/new", validateResetPasswordTokenJson, setNewPassword);
+router.post("/verification/resendlink",resendVerificationEmailLink);
 
 router.get("/renew", validateJwt, renewToken);
 router.get("/renewUser", validateJwt, renewUser);
