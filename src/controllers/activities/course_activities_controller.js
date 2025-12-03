@@ -103,64 +103,103 @@ export const createAIReading = async (req, res) => {
 export const getAllActivities = async (req, res) => {
   try {
     const courseId = parseInt(req.params.idCourse);
+    const userId = req.user?.id; // Asumiendo que tienes el usuario autenticado en req.user
 
+    // Obtener actividades con sus detalles
     const activities = await prisma.activity.findMany({
       where: { courseId },
       include: {
         aiReading: true,
-        flashCardActivity: true, // ← AGREGADO
+        flashCardActivity: true,
       },
     });
 
-    const formatted = activities.map((activity) => {
-      let type = null;
-      let details = null;
+    // Formatear las actividades con los nuevos campos
+    const formattedActivities = await Promise.all(
+      activities.map(async (activity) => {
+        let type = null;
+        let details = null;
+        let totalScore = null; // Para AIReading
+        let bestScore = null; // Para FlashCard
 
-      if (activity.aiReading) {
-        type = "aIReading";
-        details = {
-          aiReadingId: activity.aiReading.id,
-          content: activity.aiReading.content,
-          length: activity.aiReading.length,
-          complexity: activity.aiReading.complexity,
-          style: activity.aiReading.style,
-        };
-      } else if (activity.flashCardActivity) {
-        // ← NUEVO BLOQUE
-        type = "flashCard";
-        details = {
-          flashCardActivityId: activity.flashCardActivity.id,
-          maxCards: activity.flashCardActivity.maxCards,
-          cardOrder: activity.flashCardActivity.cardOrder,
-        };
-      }
-      // Futuro:
-      // else if (activity.essay) {
-      //   type = "Essay";
-      //   details = activity.essay;
-      // } else if (activity.quiz) {
-      //   type = "Quiz";
-      //   details = activity.quiz;
-      // }
+        if (activity.aiReading) {
+          type = "aIReading";
 
-      return {
-        id: activity.id,
-        courseId: activity.courseId, // ← ÚTIL AGREGAR
-        title: activity.title,
-        description: activity.description,
-        dueDate: activity.dueDate,
-        hasScoring: activity.hasScoring, // ← IMPORTANTE
-        maxScore: activity.maxScore, // ← IMPORTANTE
-        createdAt: activity.createdAt,
-        updatedAt: activity.updatedAt,
-        type, // "AIReading" o "FlashCard"
-        ...details, // Campos específicos del tipo
-      };
-    });
+          // Obtener el registro de AIReadingSession para este usuario y actividad
+          const readingSession = await prisma.aIReadingSession.findUnique({
+            where: {
+              studentId_aiReadingId: {
+                studentId: userId,
+                aiReadingId: activity.aiReading.id,
+              },
+            },
+            select: {
+              totalScore: true,
+            },
+          });
+
+          // Asignar totalScore si existe el registro, de lo contrario null
+          totalScore = readingSession ? readingSession.totalScore : null;
+
+          details = {
+            aiReadingId: activity.aiReading.id,
+            content: activity.aiReading.content,
+            length: activity.aiReading.length,
+            complexity: activity.aiReading.complexity,
+            style: activity.aiReading.style,
+          };
+        } else if (activity.flashCardActivity) {
+          type = "flashCard";
+
+          // Obtener todas las sesiones de FlashCard para este usuario y actividad
+          const flashCardSessions = await prisma.flashCardSession.findMany({
+            where: {
+              studentId: userId,
+              flashCardActivityId: activity.flashCardActivity.id,
+              score: { gt: 0 }, // Solo considerar sesiones con score > 0
+            },
+            select: {
+              score: true,
+            },
+            orderBy: {
+              score: "desc", // Ordenar por score descendente
+            },
+            take: 1, // Tomar solo el mejor
+          });
+
+          // Asignar el mejor score si existen sesiones
+          bestScore =
+            flashCardSessions.length > 0 ? flashCardSessions[0].score : null;
+
+          details = {
+            flashCardActivityId: activity.flashCardActivity.id,
+            maxCards: activity.flashCardActivity.maxCards,
+            cardOrder: activity.flashCardActivity.cardOrder,
+          };
+        }
+
+        return {
+          id: activity.id,
+          courseId: activity.courseId,
+          title: activity.title,
+          description: activity.description,
+          dueDate: activity.dueDate,
+          hasScoring: activity.hasScoring,
+          maxScore: activity.maxScore,
+          createdAt: activity.createdAt,
+          updatedAt: activity.updatedAt,
+          type,
+          ...details,
+          // Agregar los nuevos campos
+          ...(type === "aIReading" && { totalScore }),
+          ...(type === "flashCard" && { bestScore }),
+        };
+      })
+    );
 
     return res.json({
       success: true,
-      data: formatted,
+      data: formattedActivities,
     });
   } catch (error) {
     console.error("Error fetching activities:", error);
