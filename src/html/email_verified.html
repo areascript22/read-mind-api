@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>¡Correo Confirmado!</title>
+    <style>
+      /* Estilos generales */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .confirmation-container {
+        max-width: 600px;
+        width: 100%;
+        background-color: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(50, 50, 93, 0.1),
+          0 5px 15px rgba(0, 0, 0, 0.07);
+        overflow: hidden;
+        text-align: center;
+        padding: 50px 40px;
+        animation: fadeIn 0.8s ease-out;
+      }
+
+      /* Animación de entrada */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Icono de confirmación */
+      .confirmation-icon {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+        border-radius: 50%;
+        margin: 0 auto 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
+      }
+
+      .confirmation-icon:before {
+        content: "";
+        position: absolute;
+        width: 60px;
+        height: 30px;
+        border-left: 8px solid white;
+        border-bottom: 8px solid white;
+        transform: rotate(-45deg);
+        top: 38px;
+      }
+
+      /* Textos */
+      h1 {
+        color: #2e7d32;
+        font-size: 2.8rem;
+        margin-bottom: 15px;
+        font-weight: 700;
+      }
+
+      .subtitle {
+        color: #555;
+        font-size: 1.2rem;
+        margin-bottom: 30px;
+        line-height: 1.6;
+      }
+
+      .message {
+        background-color: #f9f9f9;
+        border-radius: 12px;
+        padding: 25px;
+        margin: 30px 0;
+        border-left: 5px solid #4caf50;
+      }
+
+      .message p {
+        color: #444;
+        font-size: 1.1rem;
+        line-height: 1.7;
+      }
+
+      /* Botón de acción */
+      .action-button {
+        display: inline-block;
+        background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+        color: white;
+        padding: 16px 40px;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        border: none;
+        cursor: pointer;
+      }
+
+      .action-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+      }
+
+      /* Detalles adicionales */
+      .additional-info {
+        margin-top: 40px;
+        padding-top: 25px;
+        border-top: 1px solid #eee;
+        color: #777;
+        font-size: 0.95rem;
+      }
+
+      /* Responsividad */
+      @media (max-width: 768px) {
+        .confirmation-container {
+          padding: 40px 25px;
+        }
+
+        h1 {
+          font-size: 2.2rem;
+        }
+
+        .confirmation-icon {
+          width: 100px;
+          height: 100px;
+        }
+
+        .confirmation-icon:before {
+          width: 50px;
+          height: 25px;
+          top: 32px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .confirmation-container {
+          padding: 30px 20px;
+        }
+
+        h1 {
+          font-size: 1.9rem;
+        }
+
+        .subtitle {
+          font-size: 1rem;
+        }
+
+        .action-button {
+          padding: 14px 30px;
+          font-size: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="confirmation-container">
+      <div class="confirmation-icon"></div>
+
+      <h1>¡Cuenta Confirmada!</h1>
+
+      <p class="subtitle">
+        Tu dirección de correo electrónico ha sido verificada exitosamente
+      </p>
+
+      <div class="message">
+        <p>
+          ¡Felicidades! Has completado el proceso de verificación de correo
+          electrónico. Ahora puedes disfrutar de todos los beneficios y
+          características de tu cuenta.
+        </p>
+      </div>
+
+      <p class="subtitle">
+        ¿Qué sigue? Puedes iniciar sesión en tu cuenta y comenzar a explorar.
+      </p>
+
+      <a href="/login" class="action-button">Iniciar Sesión</a>
+
+      <div class="additional-info">
+        <p>
+          Si tienes alguna pregunta o necesitas ayuda, por favor contacta a
+          nuestro equipo de soporte.
+        </p>
+        <p style="margin-top: 10px">¡Gracias por unirte a nuestra comunidad!</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -139,13 +139,12 @@ export const verifyEmail = async (req, res) => {
       data: { emailVerified: true },
     });
 
-    res.status(201).json({
-      ok: true,
-      message: "Email verified successfully",
-    });
+    return res.sendFile(path.join(__dirname, "../html/email_verified.html"));
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Error verifyinig email" });
+    return res.sendFile(
+      path.join(__dirname, "../html/email_token_expired.html")
+    );
   }
 };
 
@@ -332,9 +331,7 @@ export const checkRestPasswordToken = async (req, res) => {
 export const setNewPassword = async (req, res) => {
   try {
     const { password } = req.body;
-    console.log(`Setting new password for email: ${req.email},   ${password}`);
     const hashedPassword = await hashPassword(password);
-    console.log(`Hashed password: ${hashedPassword}`);
     const updatedUser = await prisma.user.update({
       where: { email: req.email },
       data: { passwordHash: hashedPassword },
@@ -349,6 +346,39 @@ export const setNewPassword = async (req, res) => {
     console.log("Error setting new password: ", error);
     res.status(500).json({
       message: "Error setting new password",
+    });
+  }
+};
+
+export const resendVerificationEmailLink = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    console.log("Resend verification link to email: ", email);
+    const result = await prisma.user.findUnique({ where: { email } });
+    if (!result) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const verificationToken = generateEmailtoken(result);
+    const verificationLink = `${process.env.BASE_URL}/api/auth/verify_email?token=${verificationToken}`;
+ console.log("Resend verification link to email 2: ", email);
+    await sendEmail(
+      result.email,
+      "Verifica tu cuenta",
+      `Hola ${result.name}, verifica tu correo haciendo clic aquí: ${verificationLink}`
+    );
+ console.log("Resend verification link to email 3: ", email);
+    return res.status(200).json({
+      ok: true,
+      emailToken: verificationToken,
+      message: "Verification link successfully resent",
+    });
+  } catch (error) {
+    console.log("Error: ", error);
+    res.status(500).json({
+      message: "Hubo un error al reenviar el link de verificación",
     });
   }
 };
