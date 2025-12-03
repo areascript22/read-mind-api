@@ -60,7 +60,9 @@ export const validateEmailToken = (req, res, next) => {
     next(); // Todo bien, seguimos al controlador
   } catch (error) {
     console.error(error);
-    return res.status(400).json({ message: "Token inválido o expirado" });
+    return res.sendFile(
+      path.join(__dirname, "../html/email_token_expired.html")
+    );
   }
 };
 

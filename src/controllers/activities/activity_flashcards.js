@@ -175,7 +175,6 @@ export const createFlashCards = async (req, res) => {
 export const startFlashCardSession = async (req, res) => {
   try {
     const { activityId } = req.params;
-    console.log("Starting flashcard session for activityId:", activityId);
     const studentId = req.id;
 
     const activity = await prisma.activity.findUnique({
@@ -213,7 +212,6 @@ export const startFlashCardSession = async (req, res) => {
       });
     }
 
-    // 1. VERIFICAR SI EXISTE SESIÓN ACTIVA
     const activeSession = await prisma.flashCardSession.findFirst({
       where: {
         flashCardActivityId: activity.flashCardActivity.id,
@@ -231,11 +229,7 @@ export const startFlashCardSession = async (req, res) => {
 
     let closedPreviousSession = null;
 
-    // 2. SI EXISTE SESIÓN ACTIVA, CERRARLA PRIMERO
     if (activeSession) {
-      console.log("Found active session, closing it first:", activeSession.id);
-
-      // Calcular métricas para la sesión anterior
       const attempts = activeSession.cardAttempts;
       const cardsCompleted = attempts.length;
       const correctAnswers = attempts.filter(
@@ -248,8 +242,6 @@ export const startFlashCardSession = async (req, res) => {
       const now = new Date();
       const startedAt = new Date(activeSession.startedAt);
       const totalTimeSec = Math.floor((now - startedAt) / 1000);
-
-      // Cerrar la sesión anterior
       closedPreviousSession = await prisma.flashCardSession.update({
         where: { id: activeSession.id },
         data: {
@@ -277,11 +269,8 @@ export const startFlashCardSession = async (req, res) => {
           },
         },
       });
-
-      console.log("Previous session closed:", closedPreviousSession.id);
     }
 
-    // 3. CREAR NUEVA SESIÓN (siempre creamos una nueva)
     const newSession = await prisma.flashCardSession.create({
       data: {
         flashCardActivityId: activity.flashCardActivity.id,
@@ -303,7 +292,6 @@ export const startFlashCardSession = async (req, res) => {
       },
     });
 
-    // 4. OBTENER CARDS DISPONIBLES
     const availableTranslations = await prisma.userTranslation.findMany({
       where: {
         userId: studentId,
@@ -320,7 +308,6 @@ export const startFlashCardSession = async (req, res) => {
       take: activity.flashCardActivity.maxCards || 10,
     });
 
-    // 5. PREPARAR RESPUESTA
     const response = {
       success: true,
       message: "FlashCard session started successfully",
@@ -336,7 +323,6 @@ export const startFlashCardSession = async (req, res) => {
       },
     };
 
-    // 6. AGREGAR INFORMACIÓN DE LA SESIÓN CERRADA (si existía)
     if (closedPreviousSession) {
       response.data.previousSessionClosed = {
         sessionId: closedPreviousSession.id,
@@ -363,7 +349,6 @@ export const startFlashCardSession = async (req, res) => {
       response.message =
         "Previous session closed and new FlashCard session started successfully";
     }
-
     return res.status(201).json(response);
   } catch (error) {
     console.error("Error starting flashcard session:", error);
@@ -397,7 +382,6 @@ export const completeFlashCardSession = async (req, res) => {
             activity: true,
           },
         },
-        // Incluir attempts para calcular métricas
         cardAttempts: {
           select: {
             isCorrect: true,
@@ -423,6 +407,7 @@ export const completeFlashCardSession = async (req, res) => {
     // CALCULAR MÉTRICAS DESDE FLASHCARDATTEMPT
     const attempts = session.cardAttempts;
     const cardsCompleted = attempts.length;
+    const maxCards = session.flashCardActivity.maxCards;
 
     // Contar attempts correctos e incorrectos
     const correctAnswers = attempts.filter(
@@ -436,7 +421,15 @@ export const completeFlashCardSession = async (req, res) => {
     const startedAt = new Date(session.startedAt);
     const totalTimeSec = Math.floor((now - startedAt) / 1000);
 
-    // ACTUALIZAR SESIÓN CON LAS MÉTRICAS CALCULADAS
+    // CALCULAR EL SCORE BASADO EN LA LÓGICA PROPUESTA
+    let finalScore = 0;
+
+    if (maxCards > 0) {
+      // Calcular el porcentaje de respuestas correctas respecto al total de cards
+      const accuracyRate = correctAnswers / maxCards;
+      finalScore = Math.round(accuracyRate * 100); // Score de 0 a 100
+    }
+
     const updatedSession = await prisma.flashCardSession.update({
       where: { id: parseInt(sessionId) },
       data: {
@@ -445,8 +438,7 @@ export const completeFlashCardSession = async (req, res) => {
         cardsCompleted: cardsCompleted,
         correctAnswers: correctAnswers,
         incorrectAnswers: incorrectAnswers,
-        // Opcional: calcular confidenceScore promedio si tienes ese campo
-        // confidenceScore: await calculateAverageConfidence(sessionId)
+        score: finalScore, // ← AQUÍ SE AGREGA EL SCORE CALCULADO
       },
       include: {
         cardAttempts: {
@@ -468,14 +460,14 @@ export const completeFlashCardSession = async (req, res) => {
     });
 
     // Calcular score final si la actividad tiene scoring
-    let finalScore = null;
+    let finalScoreOld = null;
     if (
       session.flashCardActivity.activity.hasScoring &&
       session.flashCardActivity.activity.maxScore
     ) {
       if (cardsCompleted > 0) {
         const accuracy = correctAnswers / cardsCompleted;
-        finalScore = Math.round(
+        finalScoreOld = Math.round(
           accuracy * session.flashCardActivity.activity.maxScore
         );
       }
@@ -521,7 +513,6 @@ export const completeFlashCardSession = async (req, res) => {
     });
   }
 };
-
 export const createFlashCardAttempt = async (req, res) => {
   try {
     const { sessionId } = req.params;
