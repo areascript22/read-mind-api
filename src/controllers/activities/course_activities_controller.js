@@ -103,7 +103,7 @@ export const createAIReading = async (req, res) => {
 export const getAllActivities = async (req, res) => {
   try {
     const courseId = parseInt(req.params.idCourse);
-    const userId = req.user?.id; // Asumiendo que tienes el usuario autenticado en req.user
+    const userId = req.id; // Asumiendo que tienes el usuario autenticado en req.user
 
     // Obtener actividades con sus detalles
     const activities = await prisma.activity.findMany({
