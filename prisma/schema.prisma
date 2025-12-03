@@ -141,10 +141,10 @@ model FlashCardSession {
   completedAt         DateTime?
   totalTimeSec        Int       @default(0)
 
-  cardsCompleted   Int    @default(0) // Total de cards intentados
-  correctAnswers   Int    @default(0) // Aciertos totales
-  incorrectAnswers Int    @default(0) // Errores totales
-  confidenceScore  Float? // Promedio de confianza (1-5)
+  cardsCompleted   Int   @default(0) // Total de cards intentados
+  correctAnswers   Int   @default(0) // Aciertos totales
+  incorrectAnswers Int   @default(0) // Errores totales
+  score            Float @default(0) // Promedio de confianza (1-5)
 
   // Foreign keys
   student           User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -276,13 +276,13 @@ model SummaryAttempt {
 }
 
 model AIReadingAttempt {
-  id                       Int      @id @default(autoincrement())
-  aiReadingId              Int
-  userId                   Int
-  timeSinceEnterSec        Int      @default(0)
-  timeSinceNextActivitySec Int      @default(0)
-  playCount                Int      @default(0)
-  createdAt                DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  aiReadingId  Int
+  userId       Int
+  timeSpentSec Int
+  playCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt // Campo agregado aquí
 
   aiReading AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id])

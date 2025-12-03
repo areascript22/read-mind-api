@@ -9,6 +9,6 @@ import {
 const router = express.Router();
 router.post("/:aiReadingId", validateJwt, createActivityProgress);
 router.put("/:aiReadingId", validateJwt, updateActivityProgress);
-router.get("/:userId", validateJwt, getAllActivityProgresses);
+router.get("/:userId/:courseId", validateJwt, getAllActivityProgresses);
 
 export default router;

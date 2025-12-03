@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enlace Expirado</title>
+    <style>
+      /* Estilos generales */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .expired-container {
+        max-width: 600px;
+        width: 100%;
+        background-color: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(33, 150, 243, 0.1),
+          0 5px 15px rgba(0, 0, 0, 0.07);
+        overflow: hidden;
+        text-align: center;
+        padding: 50px 40px;
+        animation: fadeIn 0.8s ease-out;
+        border-top: 5px solid #2196f3;
+      }
+
+      /* Animación de entrada */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Icono de expiración - ahora en azul */
+      .expired-icon {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #2196f3 0%, #0d47a1 100%);
+        border-radius: 50%;
+        margin: 0 auto 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        box-shadow: 0 10px 20px rgba(33, 150, 243, 0.3);
+      }
+
+      .expired-icon:before {
+        content: "!";
+        color: white;
+        font-size: 70px;
+        font-weight: 800;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      /* Textos */
+      h1 {
+        color: #1565c0;
+        font-size: 2.8rem;
+        margin-bottom: 15px;
+        font-weight: 700;
+      }
+
+      .subtitle {
+        color: #555;
+        font-size: 1.2rem;
+        margin-bottom: 30px;
+        line-height: 1.6;
+      }
+
+      .message {
+        background-color: #f0f8ff;
+        border-radius: 12px;
+        padding: 25px;
+        margin: 30px 0;
+        border-left: 5px solid #2196f3;
+        text-align: left;
+      }
+
+      .message p {
+        color: #37474f;
+        font-size: 1.1rem;
+        line-height: 1.7;
+        margin-bottom: 15px;
+      }
+
+      .message p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Instrucciones para app */
+      .app-instructions {
+        background-color: #e3f2fd;
+        border-radius: 12px;
+        padding: 30px;
+        margin: 30px 0;
+        border: 2px solid #2196f3;
+        text-align: center;
+      }
+
+      .app-instructions h3 {
+        color: #0d47a1;
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .app-icon {
+        font-size: 1.8rem;
+      }
+
+      .instruction-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin-top: 25px;
+      }
+
+      .step {
+        display: flex;
+        align-items: flex-start;
+        text-align: left;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+      }
+
+      .step-number {
+        background-color: #2196f3;
+        color: white;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 15px;
+        flex-shrink: 0;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .step-text {
+        color: #37474f;
+        line-height: 1.6;
+      }
+
+      .step-text strong {
+        color: #1565c0;
+      }
+
+      /* Información importante */
+      .important-note {
+        background-color: #fff3e0;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 30px 0;
+        border-left: 5px solid #ff9800;
+        text-align: left;
+      }
+
+      .important-note h4 {
+        color: #ef6c00;
+        margin-bottom: 10px;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Detalles adicionales */
+      .additional-info {
+        margin-top: 40px;
+        padding-top: 25px;
+        border-top: 1px solid #e0e0e0;
+        color: #616161;
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+
+      .additional-info strong {
+        color: #1565c0;
+      }
+
+      /* Responsividad */
+      @media (max-width: 768px) {
+        .expired-container {
+          padding: 40px 25px;
+        }
+
+        h1 {
+          font-size: 2.2rem;
+        }
+
+        .expired-icon {
+          width: 100px;
+          height: 100px;
+        }
+
+        .expired-icon:before {
+          font-size: 60px;
+        }
+
+        .step {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+
+        .step-number {
+          margin-right: 0;
+          margin-bottom: 15px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .expired-container {
+          padding: 30px 20px;
+        }
+
+        h1 {
+          font-size: 1.9rem;
+        }
+
+        .subtitle {
+          font-size: 1rem;
+        }
+
+        .message,
+        .app-instructions,
+        .important-note {
+          padding: 20px 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="expired-container">
+      <div class="expired-icon"></div>
+
+      <h1>Enlace Expirado</h1>
+
+      <p class="subtitle">
+        El enlace de verificación ha caducado y ya no es válido
+      </p>
+
+      <div class="message">
+        <p>
+          El enlace que has utilizado para verificar tu correo electrónico ha
+          expirado. Por seguridad, los enlaces de confirmación tienen un tiempo
+          limitado de validez.
+        </p>
+        <p>
+          No te preocupes, puedes obtener un nuevo enlace de verificación
+          directamente desde la aplicación.
+        </p>
+      </div>
+
+      <div class="app-instructions">
+        <h3>
+          <span class="app-icon">📱</span> Solicita un nuevo enlace desde la app
+        </h3>
+
+        <div class="instruction-steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-text">
+              <strong>Abre la aplicación</strong> en tu dispositivo móvil
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-text">
+              <strong>Inicia sesión</strong> con tus credenciales (correo y
+              contraseña)
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-text">
+              <strong>Ve a la sección "Mi Cuenta" o "Configuración"</strong> y
+              busca la opción para reenviar el correo de verificación
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-text">
+              <strong>Solicita un nuevo enlace de verificación</strong> y revisa
+              tu bandeja de entrada (y carpeta de spam)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="important-note">
+        <h4><span>⚠️</span> Importante</h4>
+        <p>
+          Por razones de seguridad, no podemos generar nuevos enlaces de
+          verificación desde esta página web. Todos los enlaces deben
+          solicitarse exclusivamente a través de la aplicación móvil después de
+          iniciar sesión.
+        </p>
+      </div>
+
+      <div class="additional-info">
+        <p>
+          <strong>¿Por qué expiran los enlaces?</strong> Por tu seguridad. Los
+          enlaces temporales ayudan a proteger tu cuenta contra accesos no
+          autorizados.
+        </p>
+        <p style="margin-top: 15px">
+          Si continúas teniendo problemas para verificar tu cuenta, contacta a
+          nuestro equipo de soporte desde la sección de ayuda dentro de la
+          aplicación.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
