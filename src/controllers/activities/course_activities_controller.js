@@ -101,6 +101,9 @@ export const createAIReading = async (req, res) => {
 };
 
 export const getAllActivities = async (req, res) => {
+  console.log(
+    new Date().toLocaleString("es-EC", { timeZone: "America/Guayaquil" })
+  );
   try {
     const courseId = parseInt(req.params.idCourse);
     const userId = req.id;
@@ -245,12 +248,11 @@ export const updateAIReading = async (req, res) => {
   try {
     const activityId = parseInt(req.params.activityId);
     const { title, description, dueDate } = req.body;
-    
+
     const activity = await prisma.activity.findUnique({
       where: { id: activityId },
       include: { aiReading: true },
     });
-
 
     if (!activity) {
       return res.status(404).json({

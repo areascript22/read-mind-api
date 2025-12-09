@@ -755,3 +755,35 @@ export const updateFlashCardActivity = async (req, res) => {
     });
   }
 };
+
+export const isActivityOverDue = async (req, res) => {
+  try {
+    const activityId = parseInt(req.params.activityId);
+
+    if (isNaN(activityId)) {
+      return res.status(400).json({ message: "Invalid activityId" });
+    }
+
+    const activity = await prisma.activity.findUnique({
+      where: { id: activityId },
+      select: { dueDate: true },
+    });
+
+    if (!activity) {
+      return res.status(404).json({ message: "Activity not found" });
+    }
+
+    // Si no tiene fecha de entrega, no puede estar vencida
+    if (!activity.dueDate) {
+      return res.json({ isOverdue: false });
+    }
+
+    const now = new Date(); // UTC
+    const isOverdue = activity.dueDate < now;
+
+    return res.json({ ok: true, isOverdue: isOverdue });
+  } catch (error) {
+    console.error("Error checking overdue:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

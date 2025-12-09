@@ -14,6 +14,7 @@ import {
   completeFlashCardSession,
   createFlashCardAttempt,
   createFlashCards,
+  isActivityOverDue,
   startFlashCardSession,
   updateFlashCardActivity,
 } from "../controllers/activities/activity_flashcards.js";
@@ -46,6 +47,9 @@ router.post("/mainIdea/attempt", validateJwt, createMainIdeaAttempt);
 router.post("/summary/attempt", validateJwt, createSummaryAttempt);
 
 router.get("/:idCourse/getAllAiReadings", validateJwt, getAllActivities);
+router.get("/:activityId/overdue", validateJwt, isActivityOverDue);
+
+
 router.put("/:activityId/aiReading", validateJwt, updateAIReading);
 router.delete("/:activityId", validateJwt, deleteActivity);
 
