@@ -656,3 +656,134 @@ export const createFlashCardAttempt = async (req, res) => {
     });
   }
 };
+
+export const updateFlashCardActivity = async (req, res) => {
+  try {
+    const activityId = parseInt(req.params.activityId);
+    const { title, description, dueDate, maxCards, cardOrder } = req.body;
+
+    // Validación mejorada
+    if (!title || !description || !dueDate || maxCards === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Title, description, dueDate, and maxCards are required",
+      });
+    }
+
+    // Buscar la actividad con su relación flashCardActivity
+    const activity = await prisma.activity.findUnique({
+      where: { id: activityId },
+      include: {
+        flashCardActivity: true, // Incluir la relación
+      },
+    });
+
+    if (!activity) {
+      return res.status(404).json({
+        success: false,
+        message: "Activity not found",
+      });
+    }
+
+    const isFlashCardActivity = activity.flashCardActivity;
+    if (!isFlashCardActivity) {
+      return res.status(400).json({
+        ok: false,
+        message: "This activity is not a FlashCard activity",
+      });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Actualizar Activity
+      const updatedActivity = await tx.activity.update({
+        where: { id: activityId },
+        data: {
+          title: title.trim(),
+          description: description.trim(),
+          dueDate: new Date(dueDate),
+          updatedAt: new Date(),
+        },
+      });
+
+      const updatedFlashCardActivity = await tx.flashCardActivity.update({
+        where: { activityId: activityId },
+        data: {
+          maxCards: parseInt(maxCards),
+          updatedAt: new Date(),
+        },
+      });
+      return { updatedActivity, updatedFlashCardActivity };
+    });
+
+    let formattedResponse = {
+      type: "flashCard",
+      id: result.updatedActivity.id,
+      courseId: result.updatedActivity.courseId,
+      title: result.updatedActivity.title,
+      description: result.updatedActivity.description,
+      dueDate: result.updatedActivity.dueDate,
+      hasScoring: result.updatedActivity.hasScoring,
+      maxScore: result.updatedActivity.maxScore,
+      createdAt: result.updatedActivity.createdAt,
+      updatedAt: result.updatedActivity.updatedAt,
+
+      flashCardActivityId: result.updatedFlashCardActivity.id,
+      maxCards: result.updatedFlashCardActivity.maxCards,
+      cardOrder: result.updatedFlashCardActivity.cardOrder,
+    };
+
+    return res.status(200).json({
+      ok: true,
+      message: "FlashCard activity updated successfully",
+      data: formattedResponse,
+    });
+  } catch (error) {
+    console.error("Error updating flash card activity:", error);
+
+    if (error.code === "P2025") {
+      return res.status(404).json({
+        success: false,
+        message: "FlashCard activity not found",
+        error: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Error al actualizar datos",
+      error: error.message,
+    });
+  }
+};
+
+export const isActivityOverDue = async (req, res) => {
+  try {
+    const activityId = parseInt(req.params.activityId);
+
+    if (isNaN(activityId)) {
+      return res.status(400).json({ message: "Invalid activityId" });
+    }
+
+    const activity = await prisma.activity.findUnique({
+      where: { id: activityId },
+      select: { dueDate: true },
+    });
+
+    if (!activity) {
+      return res.status(404).json({ message: "Activity not found" });
+    }
+
+    // Si no tiene fecha de entrega, no puede estar vencida
+    if (!activity.dueDate) {
+      return res.json({ isOverdue: false });
+    }
+
+    const now = new Date(); // UTC
+    const isOverdue = activity.dueDate < now;
+
+    return res.json({ ok: true, isOverdue: isOverdue });
+  } catch (error) {
+    console.error("Error checking overdue:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

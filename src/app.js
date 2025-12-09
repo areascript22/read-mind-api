@@ -27,7 +27,7 @@ app.use("/api/auth", authRoute); //
 app.use("/api/courses", courseRoute); //
 app.use("/api/courseStudent", courseStudent); //
 app.use("/api/courseContent", courseContent);
-app.use("/api/courseActivity", courseActivity);
+app.use("/api/courseActivity", courseActivity); 
 app.use("/api/file", fileManagement);
 app.use("/api/roleRequests", roleRequests);
 app.use("/api/ai", aiRoute);
