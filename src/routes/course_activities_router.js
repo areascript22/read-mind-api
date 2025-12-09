@@ -15,6 +15,7 @@ import {
   createFlashCardAttempt,
   createFlashCards,
   startFlashCardSession,
+  updateFlashCardActivity,
 } from "../controllers/activities/activity_flashcards.js";
 
 const router = express.Router();
@@ -26,9 +27,18 @@ router.post(
   validateJwt,
   startFlashCardSession
 );
-router.put("/flashcard/:sessionId/complete", validateJwt, completeFlashCardSession);
-router.post("/flashcard/:sessionId/attempt", validateJwt, createFlashCardAttempt);
+router.put(
+  "/flashcard/:sessionId/complete",
+  validateJwt,
+  completeFlashCardSession
+);
+router.post(
+  "/flashcard/:sessionId/attempt",
+  validateJwt,
+  createFlashCardAttempt
+);
 
+router.put("/:activityId/flashcards", validateJwt, updateFlashCardActivity);
 
 router.post("/aiReading/attempt", validateJwt, createAIReadingAttempt);
 router.post("/paraphrase/attempt", validateJwt, createParaphraseAttempt);
