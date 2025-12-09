@@ -101,31 +101,34 @@ export const createAIReading = async (req, res) => {
 };
 
 export const getAllActivities = async (req, res) => {
+  console.log(
+    new Date().toLocaleString("es-EC", { timeZone: "America/Guayaquil" })
+  );
   try {
     const courseId = parseInt(req.params.idCourse);
-    const userId = req.id; // Asumiendo que tienes el usuario autenticado en req.user
+    const userId = req.id;
 
-    // Obtener actividades con sus detalles
     const activities = await prisma.activity.findMany({
       where: { courseId },
       include: {
         aiReading: true,
         flashCardActivity: true,
       },
+      orderBy: {
+        createdAt: "asc",
+      },
     });
 
-    // Formatear las actividades con los nuevos campos
     const formattedActivities = await Promise.all(
       activities.map(async (activity) => {
         let type = null;
         let details = null;
-        let totalScore = null; // Para AIReading
-        let bestScore = null; // Para FlashCard
+        let totalScore = null;
+        let bestScore = null;
 
         if (activity.aiReading) {
           type = "aIReading";
 
-          // Obtener el registro de AIReadingSession para este usuario y actividad
           const readingSession = await prisma.aIReadingSession.findUnique({
             where: {
               studentId_aiReadingId: {
@@ -138,7 +141,6 @@ export const getAllActivities = async (req, res) => {
             },
           });
 
-          // Asignar totalScore si existe el registro, de lo contrario null
           totalScore = readingSession ? readingSession.totalScore : null;
 
           details = {
@@ -151,7 +153,6 @@ export const getAllActivities = async (req, res) => {
         } else if (activity.flashCardActivity) {
           type = "flashCard";
 
-          // Obtener todas las sesiones de FlashCard para este usuario y actividad
           const flashCardSessions = await prisma.flashCardSession.findMany({
             where: {
               studentId: userId,
@@ -190,7 +191,6 @@ export const getAllActivities = async (req, res) => {
           updatedAt: activity.updatedAt,
           type,
           ...details,
-          // Agregar los nuevos campos
           ...(type === "aIReading" && { totalScore }),
           ...(type === "flashCard" && { bestScore }),
         };
@@ -247,43 +247,90 @@ export const deleteActivity = async (req, res) => {
 export const updateAIReading = async (req, res) => {
   try {
     const activityId = parseInt(req.params.activityId);
-    const { content } = req.body;
+    const { title, description, dueDate } = req.body;
 
-    const aiReading = await prisma.aIReading.findUnique({
-      where: { activityId },
+    const activity = await prisma.activity.findUnique({
+      where: { id: activityId },
+      include: { aiReading: true },
     });
 
-    if (!aiReading) {
+    if (!activity) {
       return res.status(404).json({
         success: false,
-        message: "AIReading not found for this activity",
+        message: "Activity not found",
       });
     }
 
-    const updatedAIReading = await prisma.aIReading.update({
-      where: { activityId },
+    if (!activity.aiReading) {
+      return res.status(400).json({
+        success: false,
+        message: "This activity is not an AI Reading activity",
+      });
+    }
+
+    const updateData = {};
+
+    // Solo agregar campos si vienen en el request
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (dueDate !== undefined)
+      updateData.dueDate = dueDate ? new Date(dueDate) : null;
+
+    const updatedActivity = await prisma.activity.update({
+      where: { id: activityId },
       data: {
-        content,
+        ...updateData,
         updatedAt: new Date(),
+      },
+      include: {
+        aiReading: true,
       },
     });
 
-    return res.json({
+    // 4. Formatear la respuesta EXACTAMENTE igual que getAllActivities
+    const formattedResponse = {
+      id: updatedActivity.id,
+      courseId: updatedActivity.courseId,
+      title: updatedActivity.title,
+      description: updatedActivity.description,
+      dueDate: updatedActivity.dueDate,
+      hasScoring: updatedActivity.hasScoring,
+      maxScore: updatedActivity.maxScore,
+      createdAt: updatedActivity.createdAt,
+      updatedAt: updatedActivity.updatedAt,
+      type: "aIReading", // ← Mismo formato que getAllActivities
+      aiReadingId: updatedActivity.aiReading.id,
+      content: updatedActivity.aiReading.content,
+      length: updatedActivity.aiReading.length,
+      complexity: updatedActivity.aiReading.complexity,
+      style: updatedActivity.aiReading.style,
+      // totalScore no se incluye porque update no maneja scores
+    };
+    return res.status(200).json({
       success: true,
-      message: "AIReading updated successfully",
-      data: updatedAIReading,
+      message: "AI Reading activity updated successfully",
+      data: formattedResponse, // ← Un solo objeto, no nesting
     });
   } catch (error) {
-    console.error("Error updating AIReading:", error);
+    console.error("Error updating AI Reading activity:", error);
+
+    // Manejar errores específicos de Prisma
+    if (error.code === "P2025") {
+      return res.status(404).json({
+        success: false,
+        message: "Activity not found",
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
 //Attempts
-
 export const createParaphraseAttempt = async (req, res) => {
   try {
     const {

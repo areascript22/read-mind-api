@@ -14,7 +14,9 @@ import {
   completeFlashCardSession,
   createFlashCardAttempt,
   createFlashCards,
+  isActivityOverDue,
   startFlashCardSession,
+  updateFlashCardActivity,
 } from "../controllers/activities/activity_flashcards.js";
 
 const router = express.Router();
@@ -26,9 +28,18 @@ router.post(
   validateJwt,
   startFlashCardSession
 );
-router.put("/flashcard/:sessionId/complete", validateJwt, completeFlashCardSession);
-router.post("/flashcard/:sessionId/attempt", validateJwt, createFlashCardAttempt);
+router.put(
+  "/flashcard/:sessionId/complete",
+  validateJwt,
+  completeFlashCardSession
+);
+router.post(
+  "/flashcard/:sessionId/attempt",
+  validateJwt,
+  createFlashCardAttempt
+);
 
+router.put("/:activityId/flashcards", validateJwt, updateFlashCardActivity);
 
 router.post("/aiReading/attempt", validateJwt, createAIReadingAttempt);
 router.post("/paraphrase/attempt", validateJwt, createParaphraseAttempt);
@@ -36,6 +47,9 @@ router.post("/mainIdea/attempt", validateJwt, createMainIdeaAttempt);
 router.post("/summary/attempt", validateJwt, createSummaryAttempt);
 
 router.get("/:idCourse/getAllAiReadings", validateJwt, getAllActivities);
+router.get("/:activityId/overdue", validateJwt, isActivityOverDue);
+
+
 router.put("/:activityId/aiReading", validateJwt, updateAIReading);
 router.delete("/:activityId", validateJwt, deleteActivity);
 
