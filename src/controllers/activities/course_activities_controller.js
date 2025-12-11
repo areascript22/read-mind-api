@@ -300,7 +300,7 @@ export const deleteAIReadingActivitySimple = async (req, res) => {
   const activityId = parseInt(req.params.activityId);
 
   if (isNaN(activityId)) {
-    return res.status(400).json({ error: "Invalid activity ID" });
+    return res.status(400).json({ ok: false, message: "Invalid activity ID" });
   }
 
   try {
@@ -318,12 +318,15 @@ export const deleteAIReadingActivitySimple = async (req, res) => {
     });
 
     if (!activity) {
-      return res.status(404).json({ error: "Activity not found" });
+      return res
+        .status(200)
+        .json({ ok: true, message: "Activity already deleted" });
     }
 
     if (!activity.aiReading) {
       return res.status(400).json({
-        error: "Activity is not an AI Reading activity",
+        ok: false,
+        message: "Activity is not an AI Reading activity",
         type: activity.flashCardActivity ? "FlashCardActivity" : "Unknown",
       });
     }
@@ -335,7 +338,7 @@ export const deleteAIReadingActivitySimple = async (req, res) => {
 
     // 3. Si llegamos aquí, ¡funcionó!
     res.status(200).json({
-      success: true,
+      ok: true,
       message: "Activity deleted successfully (surprisingly!)",
       deletedActivity: {
         id: deletedActivity.id,
@@ -347,6 +350,7 @@ export const deleteAIReadingActivitySimple = async (req, res) => {
     console.error("Simple delete error:", error);
 
     const response = {
+      ok: false,
       error: "Delete failed",
       activityId,
       code: error.code,
