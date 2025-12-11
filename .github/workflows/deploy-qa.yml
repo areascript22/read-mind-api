@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -18,7 +18,7 @@ jobs:
           node-version: 20
 
       - name: Deploy to Heroku
-        uses: akhileshns/heroku-deploy@v4.2.7
+        uses: akhileshns/heroku-deploy@v3.12.14  # Última versión estable
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: ${{ secrets.HEROKU_APP_NAME_DEV }}
