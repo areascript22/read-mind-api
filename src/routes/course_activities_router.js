@@ -6,7 +6,7 @@ import {
   createMainIdeaAttempt,
   createParaphraseAttempt,
   createSummaryAttempt,
-  deleteActivity,
+  deleteAIReadingActivitySimple,
   getAllActivities,
   updateAIReading,
 } from "../controllers/activities/course_activities_controller.js";
@@ -49,8 +49,7 @@ router.post("/summary/attempt", validateJwt, createSummaryAttempt);
 router.get("/:idCourse/getAllAiReadings", validateJwt, getAllActivities);
 router.get("/:activityId/overdue", validateJwt, isActivityOverDue);
 
-
 router.put("/:activityId/aiReading", validateJwt, updateAIReading);
-router.delete("/:activityId", validateJwt, deleteActivity);
+router.delete("/:activityId", validateJwt, deleteAIReadingActivitySimple);
 
 export default router;
