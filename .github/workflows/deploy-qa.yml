@@ -1,3 +1,10 @@
+name: Deploy QA to Heroku (DEV Server)
+
+on:
+  push:
+    branches:
+      - qa
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
