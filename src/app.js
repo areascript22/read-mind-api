@@ -23,11 +23,15 @@ dotenv.config({ path: envFilePath });
 const app = express();
 app.use(express.json());
 
+app.use("/api/status", (req, res) => {
+  res.json({ status: "API is running 1", environment: currentEnv });
+});
+
 app.use("/api/auth", authRoute); //
 app.use("/api/courses", courseRoute); //
 app.use("/api/courseStudent", courseStudent); //
 app.use("/api/courseContent", courseContent);
-app.use("/api/courseActivity", courseActivity); 
+app.use("/api/courseActivity", courseActivity);
 app.use("/api/file", fileManagement);
 app.use("/api/roleRequests", roleRequests);
 app.use("/api/ai", aiRoute);
