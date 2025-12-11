@@ -1,36 +1,18 @@
-name: Deploy QA to Heroku (DEV Server)
-
-on:
-  push:
-    branches:
-      - qa
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Set up Node (20.11.0)
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20.11.0"
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build project
-        run: npm run build --if-present
-
-      - name: Login to Heroku
-        uses: heroku/actions/login@v2
-        with:
-          email: ${{ secrets.HEROKU_EMAIL }}
-          api_key: ${{ secrets.HEROKU_API_KEY }}
+          node-version: 20
 
       - name: Deploy to Heroku
-        uses: heroku/actions/deploy-via-git@v2
+        uses: akhileshns/heroku-deploy@v4.2.7
         with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: ${{ secrets.HEROKU_APP_NAME_DEV }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
