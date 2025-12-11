@@ -24,9 +24,13 @@ jobs:
       - name: Build project
         run: npm run build --if-present
 
-      - name: Deploy to Heroku (DEV)
-        uses: akhileshns/heroku-deploy@v3.13.15
+      - name: Login to Heroku
+        uses: heroku/actions/login@v2
         with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          email: ${{ secrets.HEROKU_EMAIL }}
+          api_key: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Deploy to Heroku
+        uses: heroku/actions/deploy-via-git@v2
+        with:
           heroku_app_name: ${{ secrets.HEROKU_APP_NAME_DEV }}
-          heroku_email: ${{ secrets.HEROKU_EMAIL }}
