@@ -1,4 +1,4 @@
-name: Deploy QA to Heroku (PROD Server)
+name: Deploy MAIN to Heroku (PROD Server)
 
 on:
   push:
