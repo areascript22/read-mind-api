@@ -285,14 +285,25 @@ export const forgotPassowrd = async (req, res) => {
     }
     const token = generatePasswordResetToken(email);
     const resetLink = `${process.env.BASE_URL}/api/auth/password/check_reset?token=${token}`;
-    await sendEmail(
-      email,
-      "Restablecer contraseña",
-      `
-        Haz click aquí para restablecer tu contraseña:
-        ${resetLink}
-    `
-    );
+    // await sendEmail(
+    //   email,
+    //   "Restablecer contraseña",
+    //   `
+    //     Haz click aquí para restablecer tu contraseña:
+    //     ${resetLink}
+    // `
+    // );
+
+    await sendEmail({
+      to: email,
+      subject: "Restablece tu contraseña",
+      text: `
+    Haz click aquí para restablecer tu contraseña:
+    ${resetLink}
+  `,
+      html: `<p>Haz clic aquí para restablecer tu contraseña:</p>
+         <a href="${resetLink}">${resetLink}</a>`,
+    });
 
     res.status(200).json({
       ok: true,
@@ -363,13 +374,13 @@ export const resendVerificationEmailLink = async (req, res) => {
     }
     const verificationToken = generateEmailtoken(result);
     const verificationLink = `${process.env.BASE_URL}/api/auth/verify_email?token=${verificationToken}`;
- console.log("Resend verification link to email 2: ", email);
+    console.log("Resend verification link to email 2: ", email);
     await sendEmail(
       result.email,
       "Verifica tu cuenta",
       `Hola ${result.name}, verifica tu correo haciendo clic aquí: ${verificationLink}`
     );
- console.log("Resend verification link to email 3: ", email);
+    console.log("Resend verification link to email 3: ", email);
     return res.status(200).json({
       ok: true,
       emailToken: verificationToken,
