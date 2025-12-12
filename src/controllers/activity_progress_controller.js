@@ -223,46 +223,55 @@ export const updateActivityProgress = async (req, res) => {
     }
 
     // Consultar los attempts con el MAYOR averageScore de cada tipo
-    const [bestParaphrase, bestMainIdea, bestSummary] = await Promise.all([
-      prisma.paraphraseAttempt.findFirst({
-        where: {
-          aiReadingId: aiReadingId,
-          userId: studentId,
-        },
-        orderBy: {
-          averageScore: "desc",
-        },
-      }),
-      prisma.mainIdeaAttempt.findFirst({
-        where: {
-          aiReadingId: aiReadingId,
-          userId: studentId,
-        },
-        orderBy: {
-          averageScore: "desc",
-        },
-      }),
-      prisma.summaryAttempt.findFirst({
-        where: {
-          aiReadingId: aiReadingId,
-          userId: studentId,
-        },
-        orderBy: {
-          averageScore: "desc",
-        },
-      }),
-    ]);
+    const [bestParaphrase, bestMainIdea, bestSummary, anyReadingAttempt] =
+      await Promise.all([
+        prisma.paraphraseAttempt.findFirst({
+          where: {
+            aiReadingId: aiReadingId,
+            userId: studentId,
+          },
+          orderBy: {
+            averageScore: "desc",
+          },
+        }),
+        prisma.mainIdeaAttempt.findFirst({
+          where: {
+            aiReadingId: aiReadingId,
+            userId: studentId,
+          },
+          orderBy: {
+            averageScore: "desc",
+          },
+        }),
+        prisma.summaryAttempt.findFirst({
+          where: {
+            aiReadingId: aiReadingId,
+            userId: studentId,
+          },
+          orderBy: {
+            averageScore: "desc",
+          },
+        }),
+
+        prisma.aIReadingAttempt.findFirst({
+          where: {
+            aiReadingId: aiReadingId,
+            userId: studentId,
+          },
+        }),
+      ]);
 
     // Determinar valores automáticos basados en la existencia de attempts
     const autoParaphraseCompleted = !!bestParaphrase;
     const autoMainIdeaCompleted = !!bestMainIdea;
     const autoSummaryCompleted = !!bestSummary;
+    const autoAIReadingCompleted = !!anyReadingAttempt;
 
     // 1. readingCompleted: si viene en el body usamos ese valor, si no viene mantenemos el existente
     const finalReadingCompleted =
       readingCompleted !== undefined
         ? readingCompleted
-        : existingProgress.readingCompleted;
+        : autoAIReadingCompleted;
 
     // Determinar si todas las actividades están completas
     const allCompleted =
@@ -286,30 +295,32 @@ export const updateActivityProgress = async (req, res) => {
 
     // Recopilar los mejores scores de cada tipo
     const bestScores = [];
-    if (readingCompleted === true) bestScores.push(25);
-    if (bestParaphrase) bestScores.push(bestParaphrase.averageScore);
-    if (bestMainIdea) bestScores.push(bestMainIdea.averageScore);
-    if (bestSummary) bestScores.push(bestSummary.averageScore);
+    if (finalReadingCompleted === true) bestScores.push(25);
+    if (bestParaphrase) bestScores.push(bestParaphrase.averageScore * 0.25);
+    if (bestMainIdea) bestScores.push(bestMainIdea.averageScore * 0.25);
+    if (bestSummary) bestScores.push(bestSummary.averageScore * 0.25);
 
     if (bestScores.length > 0) {
       const sum = bestScores.reduce((acc, score) => acc + score, 0);
-      autoTotalScore = Number((sum / bestScores.length).toFixed(2));
+      autoTotalScore = sum;
     }
+
+    console.log("All Scores:", bestScores);
+
+    console.log("Auto-calculated totalScore:", autoTotalScore);
 
     // Preparar datos para actualizar
     const updateData = {
+      readingCompleted: finalReadingCompleted,
       paraphraseCompleted: autoParaphraseCompleted,
       mainIdeaCompleted: autoMainIdeaCompleted,
       summaryCompleted: autoSummaryCompleted,
       totalProgress: autoTotalProgress,
       totalScore:
-        bestScores.length > 0 ? autoTotalScore : existingProgress.totalScore,
+        bestScores.length > 0
+          ? parseFloat(autoTotalScore)
+          : existingProgress.totalScore,
     };
-
-    // Solo actualizar readingCompleted si viene en el body
-    if (readingCompleted !== undefined) {
-      updateData.readingCompleted = readingCompleted;
-    }
 
     // Si todas están completas, marcar como completed y establecer completedAt
     if (allCompleted) {
@@ -321,6 +332,8 @@ export const updateActivityProgress = async (req, res) => {
       updateData.completedAt = null;
     }
 
+    console.log("Update Data:", updateData);
+
     // Actualizar registro existente
     const activityProgress = await prisma.aIReadingSession.update({
       where: {
@@ -331,6 +344,8 @@ export const updateActivityProgress = async (req, res) => {
       },
       data: updateData,
     });
+
+    console.log("Updated Activity Progress:", activityProgress);
 
     // Formatear la respuesta
     const formattedProgress = {

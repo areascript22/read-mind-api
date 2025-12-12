@@ -10,7 +10,8 @@ const transporter = nodemailer.createTransport({
 
 export const sendEmail = async (to, subject, text) => {
   const mailOptions = {
-    from: "areascript22@gmail.com",
+    from: '"ReadMind AI" <areascript22@gmail.com>',
+    replyTo: "areascript22@gmail.com",
     to,
     subject,
     text,
@@ -21,7 +22,7 @@ export const sendEmail = async (to, subject, text) => {
     console.log("Email successfully sent:", info.response);
     return info;
   } catch (error) {
-    console.error("Error sending email to ",to,+": "+ error);
+    console.error("Error sending email to ", to, +": " + error);
     throw error;
   }
 };
