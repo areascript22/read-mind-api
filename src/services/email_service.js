@@ -1,17 +1,19 @@
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "areascript22@gmail.com",
-    pass: "rolt cmtq cxqv xamr",
-  },
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: { user: "areascript22@gmail.com", pass: "jvli psbd vwwv lmyp" },
 });
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const sendEmail = async (to, subject, text) => {
+  await wait(350);
+
   const mailOptions = {
-    from: '"ReadMind AI" <areascript22@gmail.com>',
-    replyTo: "areascript22@gmail.com",
+    from: `"ReadMind AI App" <${process.env.GMAIL_USER}>`,
     to,
     subject,
     text,
@@ -22,7 +24,7 @@ export const sendEmail = async (to, subject, text) => {
     console.log("Email successfully sent:", info.response);
     return info;
   } catch (error) {
-    console.error("Error sending email to ", to, +": " + error);
+    console.error(`Error sending email to ${to}:`, error);
     throw error;
   }
 };

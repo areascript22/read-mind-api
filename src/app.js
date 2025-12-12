@@ -24,7 +24,7 @@ const app = express();
 app.use(express.json());
 
 app.use("/api/status", (req, res) => {
-  res.json({ status: "API is running 1", environment: currentEnv });
+  res.json({ status: "API is running 2", environment: currentEnv });
 });
 
 app.use("/api/auth", authRoute); //
