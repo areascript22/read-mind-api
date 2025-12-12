@@ -1,27 +1,53 @@
-import nodemailer from "nodemailer";
+// sendgrid-service.js
+import sgMail from "@sendgrid/mail";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "areascript22@gmail.com",
-    pass: "rolt cmtq cxqv xamr",
-  },
-});
+// Configurar API Key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-export const sendEmail = async (to, subject, text) => {
-  const mailOptions = {
-    from: "areascript22@gmail.com",
+export const sendEmail = async ({ to, subject, text, html }) => {
+  console.log("📨 [SendEmail] Iniciando envío de correo...");
+  console.log("📨 Destinatario:", to);
+  console.log("📨 Asunto:", subject);
+
+  // Validaciones básicas
+  if (!to || !subject || (!text && !html)) {
+    console.error("❌ [SendEmail] Faltan parámetros obligatorios.");
+    throw new Error("Missing parameters for sendEmail");
+  }
+
+  const msg = {
     to,
+    from: process.env.MAIL_FROM, // remitente verificado
     subject,
     text,
+    html,
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email successfully sent:", info.response);
-    return info;
-  } catch (error) {
-    console.error("Error sending email to ",to,+": "+ error);
-    throw error;
+    console.log("📤 [SendEmail] Enviando correo a SendGrid...");
+    const response = await sgMail.send(msg);
+
+    console.log("✅ [SendEmail] Correo enviado correctamente!");
+    console.log("📬 Status Code:", response[0]?.statusCode);
+    console.log("📬 Headers:", response[0]?.headers);
+
+    return response;
+  } catch (err) {
+    // Logs detallados del error de SendGrid
+    console.error("❌ [SendEmail] Error al enviar correo:");
+
+    if (err.response?.body) {
+      console.error("🔍 Body del Error:", err.response.body);
+    }
+
+    if (err.code) {
+      console.error("🔍 Código de Error:", err.code);
+    }
+
+    if (err.message) {
+      console.error("🔍 Mensaje:", err.message);
+    }
+
+    throw new Error("Failed to send email with SendGrid");
   }
 };

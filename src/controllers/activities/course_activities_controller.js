@@ -41,6 +41,9 @@ export const createAIReading = async (req, res) => {
       });
     }
 
+    console.log("Due date from front:", dueDate);
+    console.log("Due date to create: ", new Date(dueDate));
+
     const result = await prisma.$transaction(async (prisma) => {
       const activity = await prisma.activity.create({
         data: {
@@ -210,40 +213,6 @@ export const getAllActivities = async (req, res) => {
   }
 };
 
-export const deleteActivity = async (req, res) => {
-  try {
-    const activityId = parseInt(req.params.activityId);
-
-    // Verificar que la actividad exista
-    const activity = await prisma.activity.findUnique({
-      where: { id: activityId },
-    });
-
-    if (!activity) {
-      return res.status(404).json({
-        success: false,
-        message: "Activity not found",
-      });
-    }
-
-    // Eliminar la actividad
-    await prisma.activity.delete({
-      where: { id: activityId },
-    });
-
-    return res.json({
-      success: true,
-      message: "Activity deleted successfully",
-    });
-  } catch (error) {
-    console.error("Error deleting activity:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error deleting activity",
-    });
-  }
-};
-
 export const updateAIReading = async (req, res) => {
   try {
     const activityId = parseInt(req.params.activityId);
@@ -327,6 +296,71 @@ export const updateAIReading = async (req, res) => {
       message: "Internal server error",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
+  }
+};
+
+export const deleteAIReadingActivitySimple = async (req, res) => {
+  const activityId = parseInt(req.params.activityId);
+
+  if (isNaN(activityId)) {
+    return res.status(400).json({ ok: false, message: "Invalid activity ID" });
+  }
+
+  try {
+    // 1. Primero verificar que existe y es una AIReading
+    const activity = await prisma.activity.findUnique({
+      where: { id: activityId },
+      include: {
+        aiReading: {
+          select: { id: true },
+        },
+        flashCardActivity: {
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!activity) {
+      return res
+        .status(200)
+        .json({ ok: true, message: "Activity already deleted" });
+    }
+
+    if (!activity.aiReading) {
+      return res.status(400).json({
+        ok: false,
+        message: "Activity is not an AI Reading activity",
+        type: activity.flashCardActivity ? "FlashCardActivity" : "Unknown",
+      });
+    }
+
+    // 2. Intentar eliminación directa (¡esto probablemente FALLARÁ!)
+    const deletedActivity = await prisma.activity.delete({
+      where: { id: activityId },
+    });
+
+    // 3. Si llegamos aquí, ¡funcionó!
+    res.status(200).json({
+      ok: true,
+      message: "Activity deleted successfully (surprisingly!)",
+      deletedActivity: {
+        id: deletedActivity.id,
+        title: deletedActivity.title,
+        courseId: deletedActivity.courseId,
+      },
+    });
+  } catch (error) {
+    console.error("Simple delete error:", error);
+
+    const response = {
+      ok: false,
+      error: "Delete failed",
+      activityId,
+      code: error.code,
+      message: error.message,
+    };
+
+    res.status(500).json(response);
   }
 };
 
