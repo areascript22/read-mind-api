@@ -787,3 +787,67 @@ export const isActivityOverDue = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const deleteFlashCardActivity = async (req, res) => {
+  const activityId = parseInt(req.params.activityId);
+
+  if (isNaN(activityId)) {
+    return res.status(400).json({ ok: false, message: "Invalid activity ID" });
+  }
+
+  try {
+    // 1. Verificar que existe y es una FlashCardActivity
+    const activity = await prisma.activity.findUnique({
+      where: { id: activityId },
+      include: {
+        aiReading: {
+          select: { id: true },
+        },
+        flashCardActivity: {
+          select: { id: true },
+        },
+        course: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!activity) {
+      return res
+        .status(200)
+        .json({ ok: true, message: "Activity already deleted" });
+    }
+
+    if (!activity.flashCardActivity) {
+      return res.status(400).json({
+        ok: false,
+        message: "Activity is not a FlashCard activity",
+        type: activity.aiReading ? "AIReading" : "Unknown",
+      });
+    }
+
+    // 3. Eliminación directa (cascade debería manejar todo)
+    const deletedActivity = await prisma.activity.delete({
+      where: { id: activityId },
+    });
+
+    // 4. Respuesta exitosa
+    res.status(200).json({
+      success: true,
+      message: "FlashCard activity deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete FlashCard activity error:", error);
+
+    const response = {
+      okfalse,
+      activityId,
+      code: error.code,
+      message: error.message,
+    };
+    res.status(500).json(response);
+  }
+};

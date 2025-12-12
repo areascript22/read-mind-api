@@ -286,6 +286,7 @@ export const updateActivityProgress = async (req, res) => {
 
     // Recopilar los mejores scores de cada tipo
     const bestScores = [];
+    if (readingCompleted === true) bestScores.push(25);
     if (bestParaphrase) bestScores.push(bestParaphrase.averageScore);
     if (bestMainIdea) bestScores.push(bestMainIdea.averageScore);
     if (bestSummary) bestScores.push(bestSummary.averageScore);
