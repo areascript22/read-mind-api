@@ -100,11 +100,14 @@ export const signUp = async (req, res) => {
     const verificationToken = generateEmailtoken(result);
     const verificationLink = `${process.env.BASE_URL}/api/auth/verify_email?token=${verificationToken}`;
 
-    await sendEmail(
-      result.email,
-      "Verifica tu cuenta",
-      `Hola ${result.name}, verifica tu correo haciendo clic aquí: ${verificationLink}`
-    );
+    await sendEmail({
+      to: email,
+      subject: "Verifica tu cuenta",
+      text: `
+    Haz click aquí para verificar tu correo:`,
+      html: `<p>Hola ${result.name}, verifica tu correo haciendo clic aquí:</p>
+         <a href="${verificationLink}">${verificationLink}</a>`,
+    });
 
     const jwtToken = generateToken(result);
 
@@ -375,11 +378,16 @@ export const resendVerificationEmailLink = async (req, res) => {
     const verificationToken = generateEmailtoken(result);
     const verificationLink = `${process.env.BASE_URL}/api/auth/verify_email?token=${verificationToken}`;
     console.log("Resend verification link to email 2: ", email);
-    await sendEmail(
-      result.email,
-      "Verifica tu cuenta",
-      `Hola ${result.name}, verifica tu correo haciendo clic aquí: ${verificationLink}`
-    );
+
+    await sendEmail({
+      to: email,
+      subject: "Verifica tu cuenta",
+      text: `
+    Haz click aquí para verificar tu correo:`,
+      html: `<p>Hola ${result.name}, verifica tu correo haciendo clic aquí:</p>
+         <a href="${verificationLink}">${verificationLink}</a>`,
+    });
+
     console.log("Resend verification link to email 3: ", email);
     return res.status(200).json({
       ok: true,
