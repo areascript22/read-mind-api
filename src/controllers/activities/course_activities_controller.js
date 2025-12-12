@@ -41,6 +41,9 @@ export const createAIReading = async (req, res) => {
       });
     }
 
+    console.log("Due date from front:", dueDate);
+    console.log("Due date to create: ", new Date(dueDate));
+
     const result = await prisma.$transaction(async (prisma) => {
       const activity = await prisma.activity.create({
         data: {
