@@ -778,8 +778,11 @@ export const isActivityOverDue = async (req, res) => {
       return res.json({ isOverdue: false });
     }
 
+    console.log("Due date saved: ", activity.dueDate, "Now: ", new Date());
+
     const now = new Date(); // UTC
     const isOverdue = activity.dueDate < now;
+    console.log("Is overdue:", isOverdue);
 
     return res.json({ ok: true, isOverdue: isOverdue });
   } catch (error) {
