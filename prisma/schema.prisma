@@ -188,6 +188,7 @@ model AIReading {
   summaryAttempts    SummaryAttempt[]
   audioEvents        AIReadingAttempt[]
   completions        AIReadingSession[]
+  translations       Translation[]
 }
 
 model AIReadingSession {
@@ -207,7 +208,7 @@ model AIReadingSession {
   completedAt DateTime?
 
   student   User      @relation(fields: [studentId], references: [id])
-  aiReading AIReading @relation(fields: [aiReadingId], references: [id])
+  aiReading AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -303,6 +304,8 @@ model Translation {
   updatedAt            DateTime @updatedAt
   readingId            Int
 
+  reading AIReading? @relation(fields: [readingId], references: [id], onDelete: Cascade)
+
   userTranslations UserTranslation[]
 
   @@unique([sourceTextNormalized, sourceLang, targetLang, readingId])
@@ -317,7 +320,7 @@ model UserTranslation {
   createdAt     DateTime @default(now())
 
   user              User               @relation(fields: [userId], references: [id])
-  translation       Translation        @relation(fields: [translationId], references: [id])
+  translation       Translation        @relation(fields: [translationId], references: [id], onDelete: Cascade)
   flashCardAttempts FlashCardAttempt[]
 
   @@unique([userId, translationId])
