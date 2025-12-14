@@ -118,6 +118,7 @@ model Activity {
   course            Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
   aiReading         AIReading?
   flashCardActivity FlashCardActivity?
+  activityReminders ActivityReminder[]
 }
 
 model FlashCardActivity {
@@ -334,9 +335,9 @@ model GlobalConfig {
 
 model NotificationType {
   id            Int                @id @default(autoincrement())
-  name          String             @unique @db.VarChar(50) 
+  name          String             @unique @db.VarChar(50)
   description   String             @db.VarChar(255)
-  titleTemplate String             @db.VarChar(500) 
+  titleTemplate String             @db.VarChar(500)
   bodyTemplate  String             @db.VarChar(500)
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
@@ -360,13 +361,27 @@ model PushNotification {
   user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   type NotificationType @relation(fields: [typeId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  activityReminders ActivityReminder[]
 
   @@index([userId, read])
   @@index([userId, sentAt])
   @@index([deliveryStatus])
   @@index([expiresAt])
+}
+
+model ActivityReminder {
+  id         Int      @id @default(autoincrement())
+  activityId Int
+  notifyId   Int
+  sentAt     DateTime @default(now())
+
+  activity     Activity         @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  notification PushNotification @relation(fields: [notifyId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, notifyId])
+  @@index([activityId, notifyId])
 }
 
 enum NotificationDeliveryStatus {

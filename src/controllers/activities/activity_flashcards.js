@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import {
   NotificationChannelsIds,
-  notifyStudentsOfCourse,
+  notifyStudentsActivityCreated,
 } from "../../helpers/push_notifications_helper.js";
 const prisma = new PrismaClient();
 
@@ -152,7 +152,7 @@ export const createFlashCards = async (req, res) => {
       },
     });
 
-    notifyStudentsOfCourse(
+    notifyStudentsActivityCreated(
       courseId,
       {},
       NotificationChannelsIds.Activity_ALERTS,

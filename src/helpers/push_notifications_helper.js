@@ -23,9 +23,31 @@ if (!admin.apps.length) {
 
   console.log("🔥 Firebase Admin inicializado correctamente");
 }
+export const NotificationDeliveryStatus = Object.freeze({
+  PENDING: "PENDING",
+  SENT: "SENT",
+  DELIVERED: "DELIVERED",
+  FAILED: "FAILED",
+  EXPIRED: "EXPIRED",
+});
 
-export const sendPushNotificationHelper = async (
-  targetUserId,
+export const NotificationChannelsIds = Object.freeze({
+  ACTIVITY_REMINDERS: {
+    name: "ACTIVITY_REMINDERS",
+    channelId: "activity_reminders",
+  },
+  Activity_ALERTS: {
+    name: "ACTIVITY_ALERTS",
+    channelId: "activity_alerts",
+  },
+  GENERAL_APP_NOTICES: {
+    name: "GENERAL_APP_NOTICES",
+    channelId: "general_app_notices",
+  },
+});
+
+export const sendPushNotificationAndSave = async (
+  targetUser,
   title,
   body,
   data,
@@ -33,31 +55,15 @@ export const sendPushNotificationHelper = async (
   typeId
 ) => {
   try {
-    if (!targetUserId || !title || !body || !notificationChannel) {
+    if (!targetUser || !title || !body || !notificationChannel) {
       console.log(
         "Faltan campos requeridos: target user, title, body or notificationChannel"
       );
       return;
     }
 
-    const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId },
-    });
-
-    if (!targetUser) {
-      console.log("Target user not found");
-      return;
-    }
-
-    const fcmToken = targetUser.fcmToken;
-
-    if (!fcmToken) {
-      console.log("Target user has no FCM token");
-      return;
-    }
-
     const message = {
-      token: fcmToken,
+      token: targetUser.fcmToken,
       notification: {
         title: title,
         body: body,
@@ -74,6 +80,7 @@ export const sendPushNotificationHelper = async (
       },
     };
 
+    console.log("Sending push noitfication to: ", targetUser.id);
     const response = await admin.messaging().send(message);
     console.log(
       "Notification response:",
@@ -82,9 +89,9 @@ export const sendPushNotificationHelper = async (
       response.success
     );
 
-    await prisma.pushNotification.create({
+    const createdNotification = await prisma.pushNotification.create({
       data: {
-        userId: targetUserId,
+        userId: targetUser.id,
         typeId: typeId,
         title,
         message: body,
@@ -94,30 +101,71 @@ export const sendPushNotificationHelper = async (
       },
     });
 
-    emitNewNotification(targetUserId);
+    emitNewNotification(targetUser.id);
 
-    return;
+    return createdNotification;
   } catch (err) {
     console.error("Error sending push notification: ", err);
-    await prisma.pushNotification.create({
-      data: {
-        userId: targetUserId,
-        typeId: typeId,
-        title,
-        message: body,
-        data: data || {},
-        read: false,
-        deliveryStatus: NotificationDeliveryStatus.FAILED,
-      },
-    });
-
-    console.log("Notification saved as FAILED");
-
     return;
   }
 };
 
-export const notifyStudentsOfCourse = async (
+export const notifyActivityOverdue = async (
+  targetUser,
+  title,
+  body,
+  data,
+  notificationChannel,
+  typeId,
+  activityId
+) => {
+  try {
+    const activeReminder = await prisma.activityReminder.findFirst({
+      where: {
+        activityId: activityId,
+        notification: {
+          userId: targetUser.id,
+          typeId: typeId,
+        },
+      },
+    });
+
+    if (activeReminder) {
+      console.log(
+        `This notification for activity reminder was already sent: User: ${targetUser.id}, Activity: ${activityId}, "type: ${typeId}" `
+      );
+      return;
+    }
+
+    const response = await sendPushNotificationAndSave(
+      targetUser,
+      title,
+      body,
+      data,
+      notificationChannel,
+      typeId
+    );
+
+    await prisma.activityReminder.create({
+      data: {
+        activityId: activityId,
+        notifyId: response.id,
+      },
+    });
+    console.log(
+      "Reminder succesfully saved for user: ",
+      targetUser.id,
+      ", activity: ",
+      activityId,
+      "and notificaiton: ",
+      response.id
+    );
+  } catch (e) {
+    console.log("error while saving activity reminder: ", e.message);
+  }
+};
+
+export const notifyStudentsActivityCreated = async (
   courseId,
   data,
   notificationChannel,
@@ -154,8 +202,8 @@ export const notifyStudentsOfCourse = async (
   );
 
   const notifications = students.map((student) =>
-    sendPushNotificationHelper(
-      student.id,
+    sendPushNotificationAndSave(
+      student,
       titleTemplate,
       bodyTemplate,
       data,
@@ -166,26 +214,3 @@ export const notifyStudentsOfCourse = async (
 
   Promise.allSettled(notifications);
 };
-
-export const NotificationDeliveryStatus = Object.freeze({
-  PENDING: "PENDING",
-  SENT: "SENT",
-  DELIVERED: "DELIVERED",
-  FAILED: "FAILED",
-  EXPIRED: "EXPIRED",
-});
-
-export const NotificationChannelsIds = Object.freeze({
-  ACTIVITY_REMINDERS: {
-    name: "ACTIVITY_REMINDERS",
-    channelId: "activity_reminders",
-  },
-  Activity_ALERTS: {
-    name: "ACTIVITY_ALERTS",
-    channelId: "activity_alerts",
-  },
-  GENERAL_APP_NOTICES: {
-    name: "GENERAL_APP_NOTICES",
-    channelId: "general_app_notices",
-  },
-});

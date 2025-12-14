@@ -1,8 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import {
   NotificationChannelsIds,
-  notifyStudentsOfCourse,
-  sendPushNotificationHelper,
+  notifyStudentsActivityCreated,
+  sendPushNotificationAndSave,
 } from "../helpers/push_notifications_helper.js";
 
 const prisma = new PrismaClient();
@@ -34,9 +34,7 @@ export const sendNotification = async (req, res) => {
       message: "Notificación enviada correctamente",
     });
 
-
-    
-    notifyStudentsOfCourse(
+    notifyStudentsActivityCreated(
       2,
       data,
       NotificationChannelsIds.ACTIVITY_REMINDERS,

@@ -51,7 +51,7 @@ async function main() {
         name: "ACTIVITY_REMINDERS",
         description: "Recordatorios relacionados con actividades académicas",
         titleTemplate: "Recordatorio de actividad",
-        bodyTemplate: "La actividad {{activityTitle}} vence el {{dueDate}}",
+        bodyTemplate: "La actividad {{activityTitle}} vence el {{{dueDate}}}",
       },
       {
         name: "ACTIVITY_ALERTS",
