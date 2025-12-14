@@ -1,4 +1,8 @@
 import { PrismaClient } from "@prisma/client";
+import {
+  NotificationChannelsIds,
+  notifyStudentsOfCourse,
+} from "../../helpers/push_notifications_helper.js";
 const prisma = new PrismaClient();
 
 export const createAIReading = async (req, res) => {
@@ -88,11 +92,21 @@ export const createAIReading = async (req, res) => {
       aiReadingId: aiReading.id,
     };
 
-    return res.status(201).json({
+    res.status(201).json({
       ok: true,
       message: "AIReading activity created successfully",
       data: responseBody,
     });
+
+    notifyStudentsOfCourse(
+      courseId,
+      {},
+      NotificationChannelsIds.Activity_ALERTS,
+      {
+        professorName: `${req.userName} ${req.userLastName}`,
+        activityTitle: activity.title,
+      }
+    );
   } catch (error) {
     console.error("Error creating AIReading activity:", error);
     return res.status(500).json({

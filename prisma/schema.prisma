@@ -334,9 +334,10 @@ model GlobalConfig {
 
 model NotificationType {
   id            Int                @id @default(autoincrement())
-  name          String             @unique @db.VarChar(50) // ej: "ROLE_REQUEST", "COURSE_INVITE", "ACTIVITY_REMINDER"
+  name          String             @unique @db.VarChar(50) 
   description   String             @db.VarChar(255)
-  template      String             @db.VarChar(500) // Plantilla de mensaje con variables
+  titleTemplate String             @db.VarChar(500) 
+  bodyTemplate  String             @db.VarChar(500)
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   notifications PushNotification[]

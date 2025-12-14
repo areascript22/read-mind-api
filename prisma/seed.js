@@ -48,47 +48,26 @@ async function main() {
   await prisma.notificationType.createMany({
     data: [
       {
-        name: "ROLE_REQUEST",
-        description: "Actualizaciones sobre solicitudes de rol",
-        template: "Solicitud de rol {status}",
+        name: "ACTIVITY_REMINDERS",
+        description: "Recordatorios relacionados con actividades académicas",
+        titleTemplate: "Recordatorio de actividad",
+        bodyTemplate: "La actividad {{activityTitle}} vence el {{dueDate}}",
       },
       {
-        name: "COURSE_INVITE",
-        description: "Invitaciones a cursos",
-        template: "Has sido invitado al curso {courseName}",
+        name: "ACTIVITY_ALERTS",
+        description: "Alertas y avisos sobre nuevas actividades",
+        titleTemplate: "Nueva actividad",
+        bodyTemplate:
+          "El profesor {{teacherName}} creó la actividad {{activityTitle}}",
       },
       {
-        name: "ACTIVITY_ASSIGNED",
-        description: "Nuevas actividades asignadas",
-        template: "Nueva actividad: {activityTitle}",
-      },
-      {
-        name: "ACTIVITY_REMINDER",
-        description: "Recordatorios de actividades pendientes",
-        template: "Recordatorio: {activityTitle} vence {dueDate}",
-      },
-      {
-        name: "ROLE_APPROVED",
-        description: "Aprobación de solicitud de rol",
-        template: "Tu solicitud de rol {roleName} fue aprobada",
-      },
-      {
-        name: "GRADE_AVAILABLE",
-        description: "Calificaciones disponibles",
-        template: "Calificación disponible para {activityTitle}",
-      },
-      {
-        name: "SYSTEM_ANNOUNCEMENT",
-        description: "Anuncios del sistema",
-        template: "Anuncio del sistema: {message}",
-      },
-      {
-        name: "COURSE_ANNOUNCEMENT",
-        description: "Anuncios de cursos",
-        template: "Anuncio en {courseName}: {message}",
+        name: "GENERAL_APP_NOTICES",
+        description: "Avisos generales de la aplicación",
+        titleTemplate: "Aviso importante",
+        bodyTemplate: "{{message}}",
       },
     ],
-    skipDuplicates: true, // evita duplicados si ya existen
+    skipDuplicates: true,
   });
 
   console.log("✅ Datos iniciales insertados correctamente");
