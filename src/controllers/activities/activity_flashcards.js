@@ -1,4 +1,8 @@
 import { PrismaClient } from "@prisma/client";
+import {
+  NotificationChannelsIds,
+  notifyStudentsActivityCreated,
+} from "../../helpers/push_notifications_helper.js";
 const prisma = new PrismaClient();
 
 export const createFlashCards = async (req, res) => {
@@ -125,7 +129,7 @@ export const createFlashCards = async (req, res) => {
     });
 
     // Respuesta exitosa
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: "FlashCard activity created successfully",
       data: {
@@ -147,6 +151,16 @@ export const createFlashCards = async (req, res) => {
         flashCardActivityId: result.flashCardActivity.id,
       },
     });
+
+    notifyStudentsActivityCreated(
+      courseId,
+      {},
+      NotificationChannelsIds.Activity_ALERTS,
+      {
+        professorName: `${req.userName} ${req.userLastName}`,
+        activityTitle: result.activity.title,
+      }
+    );
   } catch (error) {
     console.error("Error creating flashcard activity:", error);
 

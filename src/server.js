@@ -1,6 +1,8 @@
 import { server } from "./socket_server.js";
 import "./gemini_config.js";
 import "./helpers/push_notifications_helper.js";
+import "./jobs/activity_reminder_ job.js";
+import "./jobs/clean_notifications_job.js";
 
 const PORT = process.env.PORT || 3000;
 const HOST = "0.0.0.0";

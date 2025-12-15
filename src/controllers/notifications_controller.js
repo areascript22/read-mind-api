@@ -1,14 +1,16 @@
-import { sendPushNotification } from "../helpers/push_notifications_helper.js";
 import { PrismaClient } from "@prisma/client";
-import { emitNewNotification } from "../socket_server.js";
+import {
+  NotificationChannelsIds,
+  notifyStudentsActivityCreated,
+  sendPushNotificationAndSave,
+} from "../helpers/push_notifications_helper.js";
 
 const prisma = new PrismaClient();
 
 export const sendNotification = async (req, res) => {
   try {
-    const { targetUserId, title, body, data, typeId = 1 } = req.body; // Add typeId with default
+    const { targetUserId, title, body, data, typeId = 1 } = req.body;
 
-    // 1️⃣ Validación
     if (!targetUserId || !title || !body) {
       return res.status(400).json({
         ok: false,
@@ -16,32 +18,6 @@ export const sendNotification = async (req, res) => {
       });
     }
 
-    // 2️⃣ Obtener usuario destino
-    const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId },
-      include: {
-        pushNotifications: true, // Optional: include if needed
-      },
-    });
-
-    if (!targetUser) {
-      return res.status(404).json({
-        ok: false,
-        message: "Usuario no encontrado",
-      });
-    }
-
-    // 3️⃣ Verificar token FCM
-    const fcmToken = targetUser.fcmToken;
-
-    if (!fcmToken) {
-      return res.status(400).json({
-        ok: false,
-        message: "El usuario no tiene un token FCM registrado",
-      });
-    }
-
-    // 4️⃣ Optional: Verify notification type exists
     const notificationType = await prisma.notificationType.findUnique({
       where: { id: typeId },
     });
@@ -53,57 +29,21 @@ export const sendNotification = async (req, res) => {
       });
     }
 
-    const result = await sendPushNotification(fcmToken, {
-      title,
-      body,
-      data,
-    });
-
-    if (!result.success) {
-      await prisma.pushNotification.create({
-        data: {
-          userId: targetUserId,
-          typeId: typeId,
-          title,
-          message: body, // Use 'message' instead of 'body'
-          data: data || {}, // Store as object, not string
-          read: false,
-          deliveryStatus: "FAILED", // Use the enum value
-          // sentAt and createdAt are auto-generated
-        },
-      });
-
-      return res.status(500).json({
-        ok: false,
-        message: "Error enviando notificación",
-        error: result.error?.toString(),
-      });
-    }
-
-    // Guardar notificación exitosa
-    await prisma.pushNotification.create({
-      data: {
-        userId: targetUserId,
-        typeId: typeId,
-        title,
-        message: body, // Use 'message' instead of 'body'
-        data: data || {}, // Store as object, not string
-        read: false,
-        deliveryStatus: "SENT", // Use the enum value
-        // sentAt and createdAt are auto-generated
-      },
-    });
-
-    emitNewNotification(targetUserId);
-
-    return res.status(200).json({
+    res.status(200).json({
       ok: true,
       message: "Notificación enviada correctamente",
-      response: result.response,
     });
-  } catch (err) {
-    console.error("❌ Error en sendNotification:", err);
 
+    notifyStudentsActivityCreated(
+      2,
+      data,
+      NotificationChannelsIds.ACTIVITY_REMINDERS,
+      {
+        activityTitle: "Automite AI",
+        dueDate: "20 de diciembre",
+      }
+    );
+  } catch (err) {
     return res.status(500).json({
       ok: false,
       message: "Error interno del servidor",

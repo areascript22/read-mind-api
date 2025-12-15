@@ -37,6 +37,8 @@ export const validateJwt = async (req, resp, next) => {
     }
 
     req.role = user.role.name; // Guardamos el rol para uso posterior
+    req.userName = user.name;
+    req.userLastName = user.lastName;
     next();
   } catch (error) {
     console.error("JWT validation error:", error);
