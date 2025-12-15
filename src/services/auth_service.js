@@ -8,7 +8,7 @@ export const generateToken = (user) => {
       email: user.email,
     },
     JWT_SECRET1,
-    { expiresIn: "24h" }
+    { expiresIn: "2d" }
   );
 };
 
