@@ -22,7 +22,7 @@ cron.schedule(
       where: {
         dueDate: {
           gte: now,
-          lte: next12Hours, // Changed from next24Hours to next12Hours
+          lte: next12Hours,
         },
       },
       include: {
