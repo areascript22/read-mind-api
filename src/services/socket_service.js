@@ -1,4 +1,3 @@
-// services/socketService.js
 class SocketService {
   constructor(io) {
     this.io = io;
@@ -10,7 +9,6 @@ class SocketService {
     this.io.on("connection", (socket) => {
       console.log("🔌 Usuario conectado:", socket.id);
 
-      // Usuario se conecta con su ID
       socket.on("user_connected", (userId) => {
         this.connectedUsers.set(userId, socket.id);
         socket.join(`user_${userId}`);
