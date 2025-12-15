@@ -38,11 +38,14 @@
     "install": "^0.13.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.1",
+    "mustache": "^4.2.0",
     "nanoid": "^5.1.5",
+    "node-cron": "^4.2.1",
     "nodemailer": "^7.0.6",
     "npm": "^11.7.0",
     "sharp": "^0.34.2",
     "socket.io": "^4.8.1",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zod": "^4.1.13"
   }
 }
