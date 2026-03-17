@@ -1,12 +1,15 @@
-import { GoogleGenAI } from "@google/genai"; 
+import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({});
 
-export async function generateText(prompt, model="gemini-2.5-flash"){
-    const response = await ai.models.generateContent({
-        model,
-        contents:prompt,
-    });
+export async function generateText(prompt, model = "gemini-2.5-flash") {
+  const response = await ai.models.generateContent({
+    model,
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: {
+      responseMimeType: "application/json",
+    },
+  });
 
-    return response.text;
+  return response.text;
 }
