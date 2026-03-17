@@ -71,36 +71,7 @@ IMPORTANT: Write the feedback in SPANISH language.
     const analysis = await generateText(prompt);
     console.log(`Result of the analysis (raw): ${analysis}`);
 
-    let cleaned = analysis
-      .trim()
-      .replace(/```json|```/g, "")
-      .trim();
-
-    let result;
-    try {
-      result = JSON.parse(cleaned);
-    } catch (err) {
-      console.error("⚠️ JSON parse error:", err, "Raw text:", cleaned);
-
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      if (match) {
-        try {
-          result = JSON.parse(match[0]);
-        } catch (err2) {
-          return res.status(500).json({
-            ok: false,
-            message: "Failed to parse AI response",
-            raw: cleaned,
-          });
-        }
-      } else {
-        return res.status(500).json({
-          ok: false,
-          message: "Invalid AI response format",
-          raw: cleaned,
-        });
-      }
-    }
+    const result = JSON.parse(analysis);
 
     res.status(200).json({
       ok: true,
@@ -113,6 +84,7 @@ IMPORTANT: Write the feedback in SPANISH language.
       .json({ ok: false, message: "Failed to evaluate paraphrase" });
   }
 };
+
 export const evaluateMainIdea = async (req, res) => {
   try {
     const { paragraph, userMainIdea } = req.body;
@@ -142,36 +114,7 @@ IMPORTANT: Write the feedback in SPANISH language.
     const analysis = await generateText(prompt);
     console.log(`Result of the analysis (raw): ${analysis}`);
 
-    let cleaned = analysis
-      .trim()
-      .replace(/```json|```/g, "")
-      .trim();
-
-    let result;
-    try {
-      result = JSON.parse(cleaned);
-    } catch (err) {
-      console.error("⚠️ JSON parse error:", err, "Raw text:", cleaned);
-
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      if (match) {
-        try {
-          result = JSON.parse(match[0]);
-        } catch (err2) {
-          return res.status(500).json({
-            ok: false,
-            message: "Failed to parse AI response",
-            raw: cleaned,
-          });
-        }
-      } else {
-        return res.status(500).json({
-          ok: false,
-          message: "Invalid AI response format",
-          raw: cleaned,
-        });
-      }
-    }
+    const result = JSON.parse(analysis);
 
     res.status(200).json({ ok: true, result });
   } catch (error) {
@@ -211,36 +154,7 @@ IMPORTANT: Write the feedback in SPANISH language.
     const analysis = await generateText(prompt);
     console.log(`Result of the analysis (raw): ${analysis}`);
 
-    let cleaned = analysis
-      .trim()
-      .replace(/```json|```/g, "")
-      .trim();
-
-    let result;
-    try {
-      result = JSON.parse(cleaned);
-    } catch (err) {
-      console.error("⚠️ JSON parse error:", err, "Raw text:", cleaned);
-
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      if (match) {
-        try {
-          result = JSON.parse(match[0]);
-        } catch (err2) {
-          return res.status(500).json({
-            ok: false,
-            message: "Failed to parse AI response",
-            raw: cleaned,
-          });
-        }
-      } else {
-        return res.status(500).json({
-          ok: false,
-          message: "Invalid AI response format",
-          raw: cleaned,
-        });
-      }
-    }
+    const result = JSON.parse(analysis);
 
     res.status(200).json({ ok: true, result });
   } catch (error) {

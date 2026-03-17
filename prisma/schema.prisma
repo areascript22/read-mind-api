@@ -111,7 +111,7 @@ model Activity {
   description String?   @db.VarChar(500)
   dueDate     DateTime?
   hasScoring  Boolean   @default(true)
-  maxScore    Int? // 10, 20, 100, etc. - Null si no tiene puntaje
+  maxScore    Int?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -127,8 +127,8 @@ model FlashCardActivity {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  maxCards  Int    @default(10) // Cuántas cards por sesión
-  cardOrder String @db.VarChar(20) // Random, Sequential
+  maxCards  Int    @default(10)
+  cardOrder String @db.VarChar(20)
 
   activity Activity           @relation(fields: [activityId], references: [id], onDelete: Cascade)
   sessions FlashCardSession[]
@@ -142,44 +142,43 @@ model FlashCardSession {
   completedAt         DateTime?
   totalTimeSec        Int       @default(0)
 
-  cardsCompleted   Int   @default(0) // Total de cards intentados
-  correctAnswers   Int   @default(0) // Aciertos totales
-  incorrectAnswers Int   @default(0) // Errores totales
-  score            Float @default(0) // Promedio de confianza (1-5)
+  cardsCompleted   Int   @default(0)
+  correctAnswers   Int   @default(0)
+  incorrectAnswers Int   @default(0)
+  score            Float @default(0)
 
-  // Foreign keys
   student           User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
   flashCardActivity FlashCardActivity  @relation(fields: [flashCardActivityId], references: [id], onDelete: Cascade)
   cardAttempts      FlashCardAttempt[]
 
   @@unique([studentId, flashCardActivityId, startedAt])
-  @@index([studentId, completedAt]) // ← para consultas de progreso
-  @@index([flashCardActivityId, startedAt]) // ← para analytics del curso
+  @@index([studentId, completedAt])
+  @@index([flashCardActivityId, startedAt])
 }
 
 model FlashCardAttempt {
   id                Int @id @default(autoincrement())
-  sessionId         Int // Foreign key a FlashCardSession
-  userTranslationId Int // Foreign key a UserTranslation (card específico)
+  sessionId         Int
+  userTranslationId Int
 
-  userAnswer      String           @db.VarChar(500) // Lo que escribió el usuario
-  isCorrect       Boolean // Si acertó o no
-  timeSpentSec    Int // Tiempo en esta card específica
+  userAnswer      String           @db.VarChar(500)
+  isCorrect       Boolean
+  timeSpentSec    Int
   createdAt       DateTime         @default(now())
   session         FlashCardSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   userTranslation UserTranslation  @relation(fields: [userTranslationId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, createdAt])
-  @@index([userTranslationId]) // ← para análisis por palabra
+  @@index([userTranslationId]) 
 }
 
 model AIReading {
   id         Int      @id @default(autoincrement())
   activityId Int      @unique
   content    String   @db.Text
-  length     String?  @db.VarChar(20) // e.g., Short, Medium, Long
-  complexity String?  @db.VarChar(10) // e.g., A1, A2, B1, B2
-  style      String?  @db.VarChar(50) // e.g., Informal, Formal, Academic, Storytelling
+  length     String?  @db.VarChar(20)
+  complexity String?  @db.VarChar(10)
+  style      String?  @db.VarChar(50)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -198,8 +197,8 @@ model AIReadingSession {
   aiReadingId Int
   completed   Boolean @default(false)
 
-  totalProgress Int @default(0) // 0-100%
-  totalScore    Int @default(0) // Puntaje acumulado
+  totalProgress Int @default(0)
+  totalScore    Int @default(0)
 
   readingCompleted    Boolean @default(false)
   paraphraseCompleted Boolean @default(false)
@@ -284,7 +283,7 @@ model AIReadingAttempt {
   timeSpentSec Int
   playCount    Int      @default(0)
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt // Campo agregado aquí
+  updatedAt    DateTime @updatedAt
 
   aiReading AIReading @relation(fields: [aiReadingId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id])
@@ -329,7 +328,7 @@ model UserTranslation {
 
 model GlobalConfig {
   id          Int      @id @default(autoincrement())
-  buildNumber Int //actually it's the build number
+  buildNumber Int
   updatedAt   DateTime @default(now())
 }
 
@@ -350,14 +349,13 @@ model PushNotification {
   typeId         Int
   title          String                     @db.VarChar(150)
   message        String                     @db.Text
-  data           Json? // Datos adicionales: {courseId: 1, activityId: 5}
+  data           Json?
   read           Boolean                    @default(false)
   sentAt         DateTime                   @default(now())
   readAt         DateTime?
-  expiresAt      DateTime? // Cuando la notificación deja de ser relevante
+  expiresAt      DateTime?
   deliveryStatus NotificationDeliveryStatus @default(PENDING)
 
-  // Relaciones
   user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   type NotificationType @relation(fields: [typeId], references: [id])
 
