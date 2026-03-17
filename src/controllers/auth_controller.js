@@ -15,6 +15,7 @@ import { sendEmail } from "../services/email_service.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import { sendEmailResend } from "../services/email_service_resend.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -146,7 +147,7 @@ export const verifyEmail = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.sendFile(
-      path.join(__dirname, "../html/email_token_expired.html")
+      path.join(__dirname, "../html/email_token_expired.html"),
     );
   }
 };
@@ -185,7 +186,7 @@ export const signIn = async (req, res) => {
     }
     const isPasswordMatched = await comparePasswords(
       password,
-      user.passwordHash
+      user.passwordHash,
     );
     if (!isPasswordMatched) {
       res.status(401).json({
@@ -288,16 +289,8 @@ export const forgotPassowrd = async (req, res) => {
     }
     const token = generatePasswordResetToken(email);
     const resetLink = `${process.env.BASE_URL}/api/auth/password/check_reset?token=${token}`;
-    // await sendEmail(
-    //   email,
-    //   "Restablecer contraseña",
-    //   `
-    //     Haz click aquí para restablecer tu contraseña:
-    //     ${resetLink}
-    // `
-    // );
 
-    await sendEmail({
+    await sendEmailResend({
       to: email,
       subject: "Restablece tu contraseña",
       text: `
@@ -328,7 +321,7 @@ export const checkRestPasswordToken = async (req, res) => {
     // 1️⃣ Leer el HTML
     let html = fs.readFileSync(
       path.join(__dirname, "../html/reset_password_form.html"),
-      "utf8"
+      "utf8",
     );
 
     // 2️⃣ Insertar BASE_URL del .env
