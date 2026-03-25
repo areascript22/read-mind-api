@@ -15,7 +15,6 @@ import { sendEmail } from "../services/email_service.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import { sendEmailResend } from "../services/email_service_resend.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -290,7 +289,7 @@ export const forgotPassowrd = async (req, res) => {
     const token = generatePasswordResetToken(email);
     const resetLink = `${process.env.BASE_URL}/api/auth/password/check_reset?token=${token}`;
 
-    await sendEmailResend({
+    await sendEmail({
       to: email,
       subject: "Restablece tu contraseña",
       text: `
