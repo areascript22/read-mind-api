@@ -20,7 +20,6 @@ export const translateText = async (req, res) => {
       });
     }
 
-    // 🔥 NUEVO: limpiar la palabra recibida
     const cleanedText = text
       ?.trim()
       ?.replace(/^[\p{P}\p{S}]+|[\p{P}\p{S}]+$/gu, "");
@@ -38,7 +37,6 @@ export const translateText = async (req, res) => {
 
     const contextParagraph = reading.content;
 
-    // Normalizar usando cleanedText
     const normalized = normalizeText(cleanedText);
 
     let existingTranslation = await prisma.translation.findFirst({
@@ -102,33 +100,15 @@ Use exactly this format:
 
     const geminiResponse = await generateText(prompt);
 
-    let cleaned = geminiResponse
-      .trim()
-      .replace(/```json|```/g, "")
-      .trim();
-
     let result;
     try {
-      result = JSON.parse(cleaned);
+      result = JSON.parse(geminiResponse);
     } catch (err) {
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      if (match) {
-        try {
-          result = JSON.parse(match[0]);
-        } catch (err2) {
-          result = {
-            translatedText: cleanedText,
-            explanation: "Translation failed - using fallback",
-            confidence: "low",
-          };
-        }
-      } else {
-        result = {
-          translatedText: cleanedText,
-          explanation: "Translation failed - no valid JSON response",
-          confidence: "low",
-        };
-      }
+      result = {
+        translatedText: cleanedText,
+        explanation: "Translation failed - using fallback",
+        confidence: "low",
+      };
     }
 
     const translatedText = result.translatedText || cleanedText;
@@ -269,7 +249,7 @@ export const getAllTranslationsWithLimit = async (req, res) => {
       const userTranslations = await prisma.userTranslation.findMany({
         where: { userId: userId },
         select: {
-          id: true, // ID de UserTranslation
+          id: true,
           translationId: true,
           createdAt: true,
           translation: {
@@ -284,15 +264,15 @@ export const getAllTranslationsWithLimit = async (req, res) => {
       });
 
       const shuffledUserTranslations = [...userTranslations].sort(
-        () => Math.random() - 0.5
+        () => Math.random() - 0.5,
       );
       const selectedUserTranslations = shuffledUserTranslations.slice(
         0,
-        limitNum
+        limitNum,
       );
 
       const translations = selectedUserTranslations.map((ut) => ({
-        id: ut.id, // Ahora es el ID de UserTranslation
+        id: ut.id,
         sourceText: ut.translation.sourceText,
         sourceTextNormalized: ut.translation.sourceTextNormalized,
         translated: ut.translation.translated,
@@ -334,7 +314,7 @@ export const getAllTranslationsWithLimit = async (req, res) => {
       });
 
       const translations = userTranslations.map((ut) => ({
-        id: ut.id, // Ahora es el ID de UserTranslation
+        id: ut.id,
         sourceText: ut.translation.sourceText,
         sourceTextNormalized: ut.translation.sourceTextNormalized,
         translated: ut.translation.translated,
